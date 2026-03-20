@@ -151,20 +151,21 @@ namespace Launcher
 }
 
 Launcher::DataFilesPage::DataFilesPage(const Files::ConfigurationManager& cfg, Config::GameSettings& gameSettings,
-    Config::LauncherSettings& launcherSettings, MainDialog* parent)
+    Config::LauncherSettings& launcherSettings, ContentSelectorModel::GameMode gameMode, MainDialog* parent)
     : QWidget(parent)
     , mDirectoryPickerDialog(new QDialog(this))
     , mMainDialog(parent)
     , mCfgMgr(cfg)
     , mGameSettings(gameSettings)
     , mLauncherSettings(launcherSettings)
+    , mGameMode(gameMode)
     , mNavMeshToolInvoker(new Process::ProcessInvoker(this))
     , mReloadCellsThread(&DataFilesPage::reloadCells, this)
 {
     ui.setupUi(this);
     mDirectoryPicker.setupUi(mDirectoryPickerDialog);
     setObjectName("DataFilesPage");
-    mSelector = new ContentSelectorView::ContentSelector(ui.contentSelectorWidget, /*showOMWScripts=*/true);
+    mSelector = new ContentSelectorView::ContentSelector(ui.contentSelectorWidget, /*showOMWScripts=*/true, mGameMode);
     const QString encoding = mGameSettings.value("encoding", { "win1252" }).value;
     mSelector->setEncoding(encoding);
 
@@ -211,6 +212,15 @@ Launcher::DataFilesPage::DataFilesPage(const Files::ConfigurationManager& cfg, C
 
     // Call manually to indicate all changes to addon data during startup.
     onReloadCellsTimerTimeout();
+}
+
+void Launcher::DataFilesPage::setGameMode(ContentSelectorModel::GameMode gameMode)
+{
+    if (mGameMode == gameMode)
+        return;
+
+    mGameMode = gameMode;
+    mSelector->setGameMode(gameMode);
 }
 
 Launcher::DataFilesPage::~DataFilesPage()
@@ -336,8 +346,6 @@ bool Launcher::DataFilesPage::loadSettings()
     QStringList profiles = mLauncherSettings.getContentLists();
     QString currentProfile = mLauncherSettings.getCurrentContentListName();
 
-    qDebug() << "The current profile is: " << currentProfile;
-
     for (const QString& item : profiles)
         addProfile(item, false);
 
@@ -436,9 +444,13 @@ void Launcher::DataFilesPage::populateFileViews(const QString& contentModelName)
             if (currentDir.value == mDataLocal)
                 tooltip << tr("This is the data-local directory and cannot be disabled");
             else if (currentDir.value == resourcesVfs)
-                tooltip << tr("This directory is part of OpenMW and cannot be disabled");
+                tooltip << (ContentSelectorModel::isFallout3Mode(mGameMode)
+                                ? tr("This directory is part of the current Fallout 3 install and cannot be disabled")
+                                : tr("This directory is part of OpenMW and cannot be disabled"));
             else
-                tooltip << tr("This directory is enabled in an openmw.cfg other than the user one");
+                tooltip << (ContentSelectorModel::isFallout3Mode(mGameMode)
+                                ? tr("This directory is enabled by the current Fallout 3 session")
+                                : tr("This directory is enabled in an openmw.cfg other than the user one"));
         }
 
         // Add a "data file" icon if the directory contains a content file
@@ -494,7 +506,9 @@ void Launcher::DataFilesPage::populateFileViews(const QString& contentModelName)
             ui.archiveListWidget->item(row)->setFlags(
                 flags & ~(Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsEnabled));
             ui.archiveListWidget->item(row)->setToolTip(
-                tr("This archive is enabled in an openmw.cfg other than the user one"));
+                ContentSelectorModel::isFallout3Mode(mGameMode)
+                    ? tr("This archive is enabled by the current Fallout 3 session")
+                    : tr("This archive is enabled in an openmw.cfg other than the user one"));
         }
         row++;
     }
@@ -548,21 +562,28 @@ void Launcher::DataFilesPage::saveSettings(const QString& profile)
     mLauncherSettings.setContentList(profileName, dirNames, archiveNames, fileNames);
     mGameSettings.setContentList(dirList, selectedArchivePaths(), fileNames);
 
-    QString language(mSelector->languageBox()->currentData().toString());
-
-    mLauncherSettings.setLanguage(language);
-
-    if (language == QLatin1String("Polish"))
+    if (ContentSelectorModel::isFallout3Mode(mGameMode))
     {
-        mGameSettings.setValue(QLatin1String("encoding"), { "win1250" });
-    }
-    else if (language == QLatin1String("Russian"))
-    {
-        mGameSettings.setValue(QLatin1String("encoding"), { "win1251" });
+        mLauncherSettings.setLanguage(QString());
+        mGameSettings.setValue(QLatin1String("encoding"), { "win1252" });
     }
     else
     {
-        mGameSettings.setValue(QLatin1String("encoding"), { "win1252" });
+        QString language(mSelector->languageBox()->currentData().toString());
+        mLauncherSettings.setLanguage(language);
+
+        if (language == QLatin1String("Polish"))
+        {
+            mGameSettings.setValue(QLatin1String("encoding"), { "win1250" });
+        }
+        else if (language == QLatin1String("Russian"))
+        {
+            mGameSettings.setValue(QLatin1String("encoding"), { "win1251" });
+        }
+        else
+        {
+            mGameSettings.setValue(QLatin1String("encoding"), { "win1252" });
+        }
     }
 }
 
@@ -752,7 +773,11 @@ void Launcher::DataFilesPage::on_cloneProfileAction_triggered()
         if (mGameSettings.isUserSetting(archive))
             archiveNames.push_back(archive.originalRepresentation);
     }
-    mLauncherSettings.setContentList(profile, dirNames, archiveNames, selectedFilePaths());
+    QStringList fileNames;
+    for (const auto& file : mSelector->selectedFiles())
+        fileNames.push_back(file->fileName());
+
+    mLauncherSettings.setContentList(profile, dirNames, archiveNames, fileNames);
     addProfile(profile, true);
 }
 

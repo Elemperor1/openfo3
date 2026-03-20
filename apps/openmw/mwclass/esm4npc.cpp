@@ -17,6 +17,31 @@
 
 namespace MWClass
 {
+    namespace
+    {
+        uint16_t getTemplateFlags(const ESM4::Npc& rec)
+        {
+            if (rec.mIsTES4)
+                return rec.mBaseConfig.tes4.templateFlags;
+            if (rec.mIsFONV || ESM4Npc::isFo3Like(rec))
+                return rec.mBaseConfig.fo3.templateFlags;
+            if (rec.mIsFO4)
+                return rec.mBaseConfig.fo4.templateFlags;
+            return rec.mBaseConfig.tes5.templateFlags;
+        }
+
+        bool getFemaleFlag(const ESM4::Npc& rec)
+        {
+            if (rec.mIsTES4)
+                return rec.mBaseConfig.tes4.flags & ESM4::Npc::TES4_Female;
+            if (rec.mIsFONV || ESM4Npc::isFo3Like(rec))
+                return rec.mBaseConfig.fo3.flags & ESM4::Npc::FO3_Female;
+            if (rec.mIsFO4)
+                return rec.mBaseConfig.fo4.flags & ESM4::Npc::TES5_Female;
+            return rec.mBaseConfig.tes5.flags & ESM4::Npc::TES5_Female;
+        }
+    }
+
     template <class LevelledRecord, class TargetRecord>
     static std::vector<const TargetRecord*> withBaseTemplates(
         const TargetRecord* rec, int level = MWClass::ESM4Impl::sDefaultLevel)
@@ -36,22 +61,7 @@ namespace MWClass
     {
         for (const auto* rec : recs)
         {
-            if (rec->mIsTES4)
-                return rec;
-            else if (rec->mIsFONV)
-            {
-                // TODO: FO3 should use this branch as well. But it is not clear how to distinguish FO3 from
-                // TES5. Currently FO3 uses wrong template flags that can lead to "ESM4 NPC traits not found"
-                // exception the NPC will not be added to the scene. But in any way it shouldn't cause a crash.
-                if (!(rec->mBaseConfig.fo3.templateFlags & flag))
-                    return rec;
-            }
-            else if (rec->mIsFO4)
-            {
-                if (!(rec->mBaseConfig.fo4.templateFlags & flag))
-                    return rec;
-            }
-            else if (!(rec->mBaseConfig.tes5.templateFlags & flag))
+            if (!(getTemplateFlags(*rec) & flag))
                 return rec;
         }
         return nullptr;
@@ -60,10 +70,10 @@ namespace MWClass
     class ESM4NpcCustomData : public MWWorld::TypedCustomData<ESM4NpcCustomData>
     {
     public:
-        const ESM4::Npc* mTraits;
-        const ESM4::Npc* mBaseData;
-        const ESM4::Race* mRace;
-        bool mIsFemale;
+        const ESM4::Npc* mTraits = nullptr;
+        const ESM4::Npc* mBaseData = nullptr;
+        const ESM4::Race* mRace = nullptr;
+        bool mIsFemale = false;
 
         // TODO: Use InventoryStore instead (currently doesn't support ESM4 objects)
         std::vector<const ESM4::Armor*> mEquippedArmor;
@@ -88,33 +98,49 @@ namespace MWClass
         auto data = std::make_unique<ESM4NpcCustomData>();
 
         const MWWorld::ESMStore* store = MWBase::Environment::get().getESMStore();
-        const ESM4::Npc* const base = ptr.get<ESM4::Npc>()->mBase;
+        const MWWorld::LiveCellRef<ESM4::Npc>* ref = ptr.get<ESM4::Npc>();
+        const ESM4::Npc* const base = ref ? ref->mBase : nullptr;
+        if (base == nullptr)
+        {
+            Log(Debug::Warning) << "ESM4 NPC base record is missing";
+            ESM4NpcCustomData& res = *data;
+            refData.setCustomData(std::move(data));
+            return res;
+        }
+
         auto npcRecs = withBaseTemplates<ESM4::LevelledNpc, ESM4::Npc>(base);
 
         data->mTraits = chooseTemplate(npcRecs, ESM4::Npc::Template_UseTraits);
 
         if (data->mTraits == nullptr)
+        {
             Log(Debug::Warning) << "Traits are not found for ESM4 NPC base record: \"" << base->mEditorId << "\" ("
-                                << ESM::RefId(base->mId) << ")";
+                                << ESM::RefId(base->mId) << "), falling back to the base record";
+            data->mTraits = base;
+        }
 
         data->mBaseData = chooseTemplate(npcRecs, ESM4::Npc::Template_UseBaseData);
 
         if (data->mBaseData == nullptr)
+        {
             Log(Debug::Warning) << "Base data is not found for ESM4 NPC base record: \"" << base->mEditorId << "\" ("
-                                << ESM::RefId(base->mId) << ")";
+                                << ESM::RefId(base->mId) << "), falling back to the base record";
+            data->mBaseData = base;
+        }
 
         if (data->mTraits != nullptr)
         {
             data->mRace = store->get<ESM4::Race>().find(data->mTraits->mRace);
-            if (data->mTraits->mIsTES4)
-                data->mIsFemale = data->mTraits->mBaseConfig.tes4.flags & ESM4::Npc::TES4_Female;
-            else if (data->mTraits->mIsFONV)
-                data->mIsFemale = data->mTraits->mBaseConfig.fo3.flags & ESM4::Npc::FO3_Female;
-            else if (data->mTraits->mIsFO4)
-                data->mIsFemale
-                    = data->mTraits->mBaseConfig.fo4.flags & ESM4::Npc::TES5_Female; // FO4 flags are the same as TES5
-            else
-                data->mIsFemale = data->mTraits->mBaseConfig.tes5.flags & ESM4::Npc::TES5_Female;
+            if (data->mRace == nullptr && data->mBaseData != nullptr)
+                data->mRace = store->get<ESM4::Race>().find(data->mBaseData->mRace);
+
+            if (data->mRace == nullptr)
+            {
+                Log(Debug::Warning) << "Race is not found for ESM4 NPC base record: \"" << base->mEditorId << "\" ("
+                                    << ESM::RefId(base->mId) << ")";
+            }
+
+            data->mIsFemale = getFemaleFlag(*data->mTraits);
         }
 
         if (auto inv = chooseTemplate(npcRecs, ESM4::Npc::Template_UseInventory))
@@ -182,14 +208,37 @@ namespace MWClass
             return {};
         if (data.mTraits->mIsTES4)
             return data.mTraits->mModel;
-        return data.mIsFemale ? data.mRace->mModelFemale : data.mRace->mModelMale;
+        if (data.mTraits->mIsFONV || isFo3Like(*data.mTraits))
+        {
+            if (!data.mTraits->mModel.empty())
+                return data.mTraits->mModel;
+        }
+        if (data.mRace != nullptr)
+            return data.mIsFemale ? data.mRace->mModelFemale : data.mRace->mModelMale;
+        if (!data.mTraits->mModel.empty())
+            return data.mTraits->mModel;
+        return {};
     }
 
     std::string_view ESM4Npc::getName(const MWWorld::ConstPtr& ptr) const
     {
+        const MWWorld::LiveCellRef<ESM4::Npc>* ref = ptr.get<ESM4::Npc>();
         const ESM4::Npc* const baseData = getCustomData(ptr).mBaseData;
         if (baseData == nullptr)
+        {
+            if (ref != nullptr && ref->mBase != nullptr)
+            {
+                if (!ref->mBase->mFullName.empty())
+                    return ref->mBase->mFullName;
+                return ref->mBase->mEditorId;
+            }
             return {};
+        }
         return baseData->mFullName;
+    }
+
+    bool ESM4Npc::isFo3Like(const ESM4::Npc& npc)
+    {
+        return npc.mIsFO3;
     }
 }

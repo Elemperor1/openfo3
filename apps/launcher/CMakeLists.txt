@@ -98,3 +98,15 @@ if (MSVC AND PRECOMPILE_HEADERS_WITH_MSVC)
         <vector>
     )
 endif()
+
+if (APPLE)
+    set(LAUNCHER_BUNDLE_RESOURCES_DIR "${APP_BUNDLE_DIR}/Contents/Resources")
+
+    configure_file("${OpenMW_BINARY_DIR}/defaults.bin" ${LAUNCHER_BUNDLE_RESOURCES_DIR} COPYONLY)
+    configure_file("${OpenMW_BINARY_DIR}/openmw.cfg" ${LAUNCHER_BUNDLE_RESOURCES_DIR} COPYONLY)
+    configure_file("${OpenMW_BINARY_DIR}/gamecontrollerdb.txt" ${LAUNCHER_BUNDLE_RESOURCES_DIR} COPYONLY)
+
+    add_custom_command(TARGET openmw-launcher
+        POST_BUILD
+        COMMAND cp "${OpenMW_BINARY_DIR}/resources/version" "${LAUNCHER_BUNDLE_RESOURCES_DIR}/resources")
+endif()

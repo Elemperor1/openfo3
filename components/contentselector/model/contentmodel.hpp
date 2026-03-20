@@ -2,6 +2,7 @@
 #define CONTENTMODEL_HPP
 
 #include "loadordererror.hpp"
+#include "gamemode.hpp"
 #include <QAbstractTableModel>
 #include <QIcon>
 #include <QSet>
@@ -25,10 +26,12 @@ namespace ContentSelectorModel
     {
         Q_OBJECT
     public:
-        explicit ContentModel(QObject* parent, QIcon& warningIcon, QIcon& errorIcon, bool showOMWScripts);
+        explicit ContentModel(QObject* parent, QIcon& warningIcon, QIcon& errorIcon, bool showOMWScripts,
+            GameMode gameMode = GameMode_OpenMW);
         ~ContentModel();
 
         void setEncoding(const QString& encoding);
+        void setGameMode(GameMode gameMode);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const override;
         int columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -91,6 +94,7 @@ namespace ContentSelectorModel
         QIcon mWarningIcon;
         QIcon mErrorIcon;
         bool mShowOMWScripts;
+        GameMode mGameMode;
 
         QString mErrorToolTips[ContentSelectorModel::LoadOrderError::ErrorCode_LoadOrder]
             = { tr("Unable to find dependent file: %1"), tr("Dependent file needs to be active: %1"),

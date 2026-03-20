@@ -40,6 +40,7 @@ void ESM4::Npc::load(ESM4::Reader& reader)
 
     std::uint32_t esmVer = reader.esmVersion();
     mIsTES4 = (esmVer == ESM::VER_080 || esmVer == ESM::VER_100) && !reader.hasFormVersion();
+    mIsFO3 = esmVer == ESM::VER_094 && !reader.hasFormVersion();
     mIsFONV = esmVer == ESM::VER_132 || esmVer == ESM::VER_133 || esmVer == ESM::VER_134;
     // mIsTES5 = esmVer == ESM::VER_094 || esmVer == ESM::VER_170; // WARN: FO3 is also VER_094
 
@@ -155,7 +156,9 @@ void ESM4::Npc::load(ESM4::Reader& reader)
             case ESM::fourCC("WNAM"):
             {
                 // FIXME: should be read into mWornArmor for FO4
-                if (reader.esmVersion() == ESM::VER_094 || reader.esmVersion() == ESM::VER_170)
+                if (reader.hasFormVersion()
+                    && (reader.esmVersion() == ESM::VER_094 || reader.esmVersion() == ESM::VER_170
+                        || reader.esmVersion() == ESM::VER_171))
                     reader.getFormId(mWornArmor);
                 else
                     reader.get(mFootWeight);

@@ -33,19 +33,10 @@ namespace MWRender
         const ESM4::Npc* traits = MWClass::ESM4Npc::getTraitsRecord(mPtr);
         if (traits == nullptr)
             return;
-        if (traits->mIsTES4)
+        if (traits->mIsTES4 || traits->mIsFONV || MWClass::ESM4Npc::isFo3Like(*traits))
             updatePartsTES4(*traits);
-        else if (traits->mIsFONV)
-        {
-            // Not implemented yet
-        }
         else
-        {
-            // There is no easy way to distinguish TES5 and FO3.
-            // In case of FO3 the function shouldn't crash the game and will
-            // only lead to the NPC not being rendered.
             updatePartsTES5(*traits);
-        }
     }
 
     void ESM4NpcAnimation::insertPart(std::string_view model)
@@ -59,12 +50,25 @@ namespace MWRender
     template <class Record>
     static std::string_view chooseTes4EquipmentModel(const Record* rec, bool isFemale)
     {
-        if (isFemale && !rec->mModelFemale.empty())
-            return rec->mModelFemale;
-        else if (!isFemale && !rec->mModelMale.empty())
-            return rec->mModelMale;
+        if (isFemale)
+        {
+            if (!rec->mModelFemale.empty())
+                return rec->mModelFemale;
+            if (!rec->mModelFemaleWorld.empty())
+                return rec->mModelFemaleWorld;
+        }
         else
+        {
+            if (!rec->mModelMale.empty())
+                return rec->mModelMale;
+            if (!rec->mModelMaleWorld.empty())
+                return rec->mModelMaleWorld;
+        }
+
+        if (!rec->mModel.empty())
             return rec->mModel;
+
+        return {};
     }
 
     void ESM4NpcAnimation::updatePartsTES4(const ESM4::Npc& traits)
@@ -74,10 +78,18 @@ namespace MWRender
 
         // TODO: Body and head parts are placed incorrectly, need to attach to bones
 
-        for (const ESM4::Race::BodyPart& bodyPart : (isFemale ? race->mBodyPartsFemale : race->mBodyPartsMale))
-            insertPart(bodyPart.mesh);
-        for (const ESM4::Race::BodyPart& bodyPart : race->mHeadParts)
-            insertPart(bodyPart.mesh);
+        if (race != nullptr)
+        {
+            for (const ESM4::Race::BodyPart& bodyPart : (isFemale ? race->mBodyPartsFemale : race->mBodyPartsMale))
+                insertPart(bodyPart.mesh);
+            for (const ESM4::Race::BodyPart& bodyPart : race->mHeadParts)
+                insertPart(bodyPart.mesh);
+        }
+        else
+        {
+            Log(Debug::Warning) << "Race is not available for ESM4 NPC rendering; body and head parts skipped";
+        }
+
         if (!traits.mHair.isZeroOrUnset())
         {
             const MWWorld::ESMStore* store = MWBase::Environment::get().getESMStore();
@@ -150,12 +162,20 @@ namespace MWRender
             else
                 Log(Debug::Error) << "Worn armor not found: " << ESM::RefId(traits.mWornArmor);
         }
-        if (!race->mSkin.isZeroOrUnset())
+
+        if (race != nullptr)
         {
-            if (const ESM4::Armor* armor = store->get<ESM4::Armor>().search(race->mSkin))
-                findArmorAddons(armor);
-            else
-                Log(Debug::Error) << "Skin not found: " << ESM::RefId(race->mSkin);
+            if (!race->mSkin.isZeroOrUnset())
+            {
+                if (const ESM4::Armor* armor = store->get<ESM4::Armor>().search(race->mSkin))
+                    findArmorAddons(armor);
+                else
+                    Log(Debug::Error) << "Skin not found: " << ESM::RefId(race->mSkin);
+            }
+        }
+        else
+        {
+            Log(Debug::Warning) << "Race is not available for ESM4 NPC TES5-style rendering; skin skipped";
         }
 
         if (isFemale)
@@ -184,6 +204,7 @@ namespace MWRender
         if (usedParts & ESM4::Armor::TES5_Hair)
             usedHeadPartTypes.insert(ESM4::HeadPart::Type_Hair);
         insertHeadParts(traits.mHeadParts, usedHeadPartTypes);
-        insertHeadParts(isFemale ? race->mHeadPartIdsFemale : race->mHeadPartIdsMale, usedHeadPartTypes);
+        if (race != nullptr)
+            insertHeadParts(isFemale ? race->mHeadPartIdsFemale : race->mHeadPartIdsMale, usedHeadPartTypes);
     }
 }

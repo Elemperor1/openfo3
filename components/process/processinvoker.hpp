@@ -1,6 +1,7 @@
 #ifndef PROCESSINVOKER_HPP
 #define PROCESSINVOKER_HPP
 
+#include <QProcessEnvironment>
 #include <QProcess>
 #include <QString>
 #include <QStringList>
@@ -28,6 +29,8 @@ namespace Process
             return startProcess(name, QStringList(), detached);
         }
         bool startProcess(const QString& name, const QStringList& arguments, bool detached = false);
+        bool startProcess(
+            const QString& name, const QStringList& arguments, const QProcessEnvironment& environment, bool detached = false);
 
         void killProcess();
 

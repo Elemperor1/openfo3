@@ -49,6 +49,12 @@ QProcess* Process::ProcessInvoker::getProcess()
 
 bool Process::ProcessInvoker::startProcess(const QString& name, const QStringList& arguments, bool detached)
 {
+    return startProcess(name, arguments, QProcessEnvironment::systemEnvironment(), detached);
+}
+
+bool Process::ProcessInvoker::startProcess(
+    const QString& name, const QStringList& arguments, const QProcessEnvironment& environment, bool detached)
+{
     //    mProcess = new QProcess(this);
     mName = name;
     mArguments = arguments;
@@ -94,9 +100,12 @@ bool Process::ProcessInvoker::startProcess(const QString& name, const QStringLis
     }
 
     // Start the executable
+    mProcess->setProcessEnvironment(environment);
     if (detached)
     {
-        if (!mProcess->startDetached(path, arguments))
+        mProcess->setProgram(path);
+        mProcess->setArguments(arguments);
+        if (!mProcess->startDetached())
         {
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("Error starting executable"));

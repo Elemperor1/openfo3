@@ -400,8 +400,12 @@ namespace Files
     {
         if (mActiveConfigPaths.empty())
             return mFixedPath.getUserConfigPath();
-        else
-            return mActiveConfigPaths.back();
+
+        const auto& activePath = mActiveConfigPaths.back();
+        if (activePath == mFixedPath.getGlobalConfigPath())
+            return mFixedPath.getUserConfigPath();
+
+        return activePath;
     }
 
     const std::filesystem::path& ConfigurationManager::getUserDataPath() const

@@ -6,11 +6,13 @@
 
 #include <components/config/gamesettings.hpp>
 #include <components/config/launchersettings.hpp>
+#include <components/contentselector/model/gamemode.hpp>
 
 #endif
 #include "ui_mainwindow.h"
 
 class QListWidgetItem;
+class QComboBox;
 class QStackedWidget;
 class QStringListModel;
 class QString;
@@ -44,7 +46,8 @@ namespace Launcher
         Q_OBJECT
 
     public:
-        explicit MainDialog(const Files::ConfigurationManager& configurationManager, QWidget* parent = nullptr);
+        explicit MainDialog(
+            const Files::ConfigurationManager& configurationManager, const QString& resourcesPath, QWidget* parent = nullptr);
         ~MainDialog() override;
 
         FirstRunDialogResult showFirstRunDialog();
@@ -77,6 +80,20 @@ namespace Launcher
         bool setupGameSettings();
         bool setupGraphicsSettings();
         bool setupGameData();
+        bool loadFo3GameSettings();
+        void applyFallout3DefaultContentSelection();
+        ContentSelectorModel::GameMode loadPersistedGameMode();
+        void savePersistedGameMode() const;
+        void updateModeUi();
+        QString modeSettingsPath() const;
+        QString launcherSettingsPath() const;
+        QString currentExecutableName() const;
+        QStringList buildOpenFo3Arguments();
+        QString fallout3RuntimeHomePath() const;
+        bool prepareFallout3RuntimeHome(QString* runtimeHomePath) const;
+        QStringList collectFallout3Archives(const QString& dataDir, const QStringList& contentFiles) const;
+        QStringList collectFallout3ContentFiles(const QString& dataDir) const;
+        QString resolveFallout3DataDir() const;
 
         void setVersionLabel();
 
@@ -90,6 +107,7 @@ namespace Launcher
         bool startProgram(const QString& name, const QStringList& arguments, bool detached = false);
 
         void closeEvent(QCloseEvent* event) override;
+        void gameModeChanged(int index);
 
         GraphicsPage* mGraphicsPage;
         DataFilesPage* mDataFilesPage;
@@ -100,6 +118,10 @@ namespace Launcher
         Process::ProcessInvoker* mWizardInvoker;
 
         const Files::ConfigurationManager& mCfgMgr;
+        QString mResourcesPath;
+        QComboBox* mGameModeComboBox;
+        ContentSelectorModel::GameMode mGameMode;
+        bool mLoadingModeSelection = false;
 
         Config::GameSettings mGameSettings;
         Config::LauncherSettings mLauncherSettings;

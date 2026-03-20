@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <sstream>
 #include <stdexcept>
 
 #include <components/debug/debuglog.hpp>
@@ -211,7 +212,12 @@ void ESM4::Land::load(ESM4::Reader& reader)
                 reader.skipSubRecordData();
                 break;
             default:
-                throw std::runtime_error("ESM4::LAND - Unknown subrecord " + ESM::printName(subHdr.typeId));
+            {
+                std::ostringstream stream;
+                stream << "ESM4::LAND " << mId.toString("0x") << " unknown subrecord 0x" << std::hex
+                       << subHdr.typeId << std::dec << " size=" << subHdr.dataSize;
+                throw std::runtime_error(stream.str());
+            }
         }
     }
 

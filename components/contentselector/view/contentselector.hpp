@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QToolButton>
 
+#include <components/contentselector/model/gamemode.hpp>
 #include <components/contentselector/model/contentmodel.hpp>
 
 class QSortFilterProxyModel;
@@ -30,7 +31,8 @@ namespace ContentSelectorView
         QSortFilterProxyModel* mAddonProxyModel;
 
     public:
-        explicit ContentSelector(QWidget* parent = nullptr, bool showOMWScripts = false);
+        explicit ContentSelector(QWidget* parent = nullptr, bool showOMWScripts = false,
+            ContentSelectorModel::GameMode gameMode = ContentSelectorModel::GameMode_OpenMW);
 
         ~ContentSelector() override;
 
@@ -45,6 +47,7 @@ namespace ContentSelectorView
 
         void clearCheckStates();
         void setEncoding(const QString& encoding);
+        void setGameMode(ContentSelectorModel::GameMode gameMode);
         void setContentList(const QStringList& list);
 
         ContentSelectorModel::ContentFileList selectedFiles() const;
@@ -63,11 +66,14 @@ namespace ContentSelectorView
 
     private:
         std::unique_ptr<Ui::ContentSelector> ui;
+        bool mShowOMWScripts;
+        ContentSelectorModel::GameMode mGameMode;
 
         void buildContentModel(bool showOMWScripts);
         void buildGameFileView();
         void buildAddonView();
         void buildContextMenu();
+        void syncModeUi();
         void setGameFileSelected(int index, bool selected);
         void setCheckStateForMultiSelectedItems(Qt::CheckState checkState);
 

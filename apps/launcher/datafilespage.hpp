@@ -5,6 +5,7 @@
 #include "ui_directorypicker.h"
 
 #include <components/process/processinvoker.hpp>
+#include <components/contentselector/model/gamemode.hpp>
 
 #include <QDir>
 #include <QMenu>
@@ -55,8 +56,11 @@ namespace Launcher
 
     public:
         explicit DataFilesPage(const Files::ConfigurationManager& cfg, Config::GameSettings& gameSettings,
-            Config::LauncherSettings& launcherSettings, MainDialog* parent = nullptr);
+            Config::LauncherSettings& launcherSettings, ContentSelectorModel::GameMode gameMode,
+            MainDialog* parent = nullptr);
         ~DataFilesPage();
+
+        void setGameMode(ContentSelectorModel::GameMode gameMode);
 
         QAbstractItemModel* profilesModel() const;
 
@@ -126,6 +130,7 @@ namespace Launcher
 
         Config::GameSettings& mGameSettings;
         Config::LauncherSettings& mLauncherSettings;
+        ContentSelectorModel::GameMode mGameMode;
 
         QString mPreviousProfile;
         QStringList mSelectedFiles;

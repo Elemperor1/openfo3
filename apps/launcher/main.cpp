@@ -44,7 +44,7 @@ int runLauncher(int argc, char* argv[])
 
         L10n::installQtTranslations(app, "launcher", resourcesPath);
 
-        Launcher::MainDialog mainWin(configurationManager);
+        Launcher::MainDialog mainWin(configurationManager, resourcesPath);
 
         Launcher::FirstRunDialogResult result = mainWin.showFirstRunDialog();
         if (result == Launcher::FirstRunDialogResultFailure)

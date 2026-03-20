@@ -10,22 +10,20 @@
 #include <QProgressDialog>
 #include <QSortFilterProxyModel>
 
-ContentSelectorView::ContentSelector::ContentSelector(QWidget* parent, bool showOMWScripts)
+ContentSelectorView::ContentSelector::ContentSelector(
+    QWidget* parent, bool showOMWScripts, ContentSelectorModel::GameMode gameMode)
     : QObject(parent)
     , ui(std::make_unique<Ui::ContentSelector>())
+    , mShowOMWScripts(showOMWScripts)
+    , mGameMode(gameMode)
 {
     ui->setupUi(parent);
     ui->addonView->setDragDropMode(QAbstractItemView::InternalMove);
 
-    if (!showOMWScripts)
-    {
-        ui->languageComboBox->setHidden(true);
-        ui->refreshButton->setHidden(true);
-    }
-
     buildContentModel(showOMWScripts);
     buildGameFileView();
     buildAddonView();
+    syncModeUi();
 }
 
 ContentSelectorView::ContentSelector::~ContentSelector() = default;
@@ -34,7 +32,7 @@ void ContentSelectorView::ContentSelector::buildContentModel(bool showOMWScripts
 {
     QIcon warningIcon(ui->addonView->style()->standardIcon(QStyle::SP_MessageBoxWarning));
     QIcon errorIcon(ui->addonView->style()->standardIcon(QStyle::SP_MessageBoxCritical));
-    mContentModel = new ContentSelectorModel::ContentModel(this, warningIcon, errorIcon, showOMWScripts);
+    mContentModel = new ContentSelectorModel::ContentModel(this, warningIcon, errorIcon, showOMWScripts, mGameMode);
 }
 
 void ContentSelectorView::ContentSelector::buildGameFileView()
@@ -71,6 +69,13 @@ public:
 bool ContentSelectorView::ContentSelector::isGamefileSelected() const
 {
     return ui->gameFileView->currentIndex() > 0;
+}
+
+void ContentSelectorView::ContentSelector::syncModeUi()
+{
+    const bool showOMWControls = mShowOMWScripts && !ContentSelectorModel::isFallout3Mode(mGameMode);
+    ui->languageComboBox->setVisible(showOMWControls);
+    ui->refreshButton->setVisible(showOMWControls);
 }
 
 QWidget* ContentSelectorView::ContentSelector::uiWidget() const
@@ -155,6 +160,12 @@ void ContentSelectorView::ContentSelector::setGameFile(const QString& filename)
     if (!filename.isEmpty())
     {
         const ContentSelectorModel::EsmFile* file = mContentModel->item(filename);
+        if (file == nullptr)
+        {
+            qWarning() << "Ignoring missing game file in saved profile:" << filename;
+            ui->gameFileView->setCurrentIndex(index);
+            return;
+        }
         index = ui->gameFileView->findText(file->fileName());
 
         // verify that the current index is also checked in the model
@@ -176,6 +187,16 @@ void ContentSelectorView::ContentSelector::clearCheckStates()
 void ContentSelectorView::ContentSelector::setEncoding(const QString& encoding)
 {
     mContentModel->setEncoding(encoding);
+}
+
+void ContentSelectorView::ContentSelector::setGameMode(ContentSelectorModel::GameMode gameMode)
+{
+    if (mGameMode == gameMode)
+        return;
+
+    mGameMode = gameMode;
+    mContentModel->setGameMode(gameMode);
+    syncModeUi();
 }
 
 void ContentSelectorView::ContentSelector::setContentList(const QStringList& list)
@@ -228,6 +249,9 @@ bool ContentSelectorView::ContentSelector::containsDataFiles(const QString& path
 void ContentSelectorView::ContentSelector::clearFiles()
 {
     mContentModel->clearFiles();
+    ui->gameFileView->clear();
+    ui->gameFileView->addItem(tr("<No game file>"));
+    ui->gameFileView->setCurrentIndex(0);
 }
 
 QString ContentSelectorView::ContentSelector::currentFile() const

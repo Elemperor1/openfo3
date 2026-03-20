@@ -22,11 +22,12 @@
 #include <components/files/qtconversion.hpp>
 
 ContentSelectorModel::ContentModel::ContentModel(
-    QObject* parent, QIcon& warningIcon, QIcon& errorIcon, bool showOMWScripts)
+    QObject* parent, QIcon& warningIcon, QIcon& errorIcon, bool showOMWScripts, GameMode gameMode)
     : QAbstractTableModel(parent)
     , mWarningIcon(warningIcon)
     , mErrorIcon(errorIcon)
     , mShowOMWScripts(showOMWScripts)
+    , mGameMode(gameMode)
     , mMimeType("application/omwcontent")
     , mMimeTypes(QStringList() << mMimeType)
     , mColumnCount(1)
@@ -45,6 +46,15 @@ ContentSelectorModel::ContentModel::~ContentModel()
 void ContentSelectorModel::ContentModel::setEncoding(const QString& encoding)
 {
     mEncoding = encoding;
+}
+
+void ContentSelectorModel::ContentModel::setGameMode(GameMode gameMode)
+{
+    if (mGameMode == gameMode)
+        return;
+
+    mGameMode = gameMode;
+    refreshModel({ Qt::DecorationRole, Qt::DisplayRole, Qt::ToolTipRole, Qt::CheckStateRole, Qt::UserRole });
 }
 
 int ContentSelectorModel::ContentModel::columnCount(const QModelIndex& parent) const
@@ -384,12 +394,20 @@ void ContentSelectorModel::ContentModel::addFiles(const QString& path, bool newf
 {
     QDir dir(path);
     QStringList filters;
-    filters << "*.esp"
-            << "*.esm"
-            << "*.omwgame"
-            << "*.omwaddon";
-    if (mShowOMWScripts)
-        filters << "*.omwscripts";
+    if (isFallout3Mode(mGameMode))
+    {
+        filters << "*.esp"
+                << "*.esm";
+    }
+    else
+    {
+        filters << "*.esp"
+                << "*.esm"
+                << "*.omwgame"
+                << "*.omwaddon";
+        if (mShowOMWScripts)
+            filters << "*.omwscripts";
+    }
     dir.setNameFilters(filters);
     dir.setSorting(QDir::Name);
 
@@ -492,10 +510,18 @@ void ContentSelectorModel::ContentModel::addFiles(const QString& path, bool newf
 bool ContentSelectorModel::ContentModel::containsDataFiles(const QString& path)
 {
     QStringList filters;
-    filters << "*.esp"
-            << "*.esm"
-            << "*.omwgame"
-            << "*.omwaddon";
+    if (isFallout3Mode(mGameMode))
+    {
+        filters << "*.esp"
+                << "*.esm";
+    }
+    else
+    {
+        filters << "*.esp"
+                << "*.esm"
+                << "*.omwgame"
+                << "*.omwaddon";
+    }
     QDirIterator it(path, filters, QDir::Files | QDir::NoDotAndDotDot);
     return it.hasNext();
 }
@@ -511,6 +537,10 @@ void ContentSelectorModel::ContentModel::clearFiles()
         mFiles.clear();
         endRemoveRows();
     }
+
+    mCheckedFiles.clear();
+    mNewFiles.clear();
+    mGameFile = nullptr;
 }
 
 QStringList ContentSelectorModel::ContentModel::gameFiles() const
@@ -747,6 +777,9 @@ QString ContentSelectorModel::ContentModel::toolTip(const EsmFile* file) const
 
 void ContentSelectorModel::ContentModel::refreshModel(std::initializer_list<int> roles)
 {
+    if (rowCount() == 0)
+        return;
+
     emit dataChanged(index(0, 0), index(rowCount() - 1, 0), roles);
 }
 

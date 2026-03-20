@@ -89,3 +89,6 @@ venv/
 ## operating system files
 .DS_Store
 Thumbs.db
+
+## local Fallout 3 game assets
+/game_files/

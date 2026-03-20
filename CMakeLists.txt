@@ -29,6 +29,7 @@ option(DEPLOY_QT_TRANSLATIONS "Deploy standard Qt translations to resources fold
 
 # Apps and tools
 option(BUILD_OPENMW             "Build OpenMW" ON)
+option(BUILD_OPENFO3            "Build Fallout 3 runtime prototype" OFF)
 option(BUILD_LAUNCHER           "Build Launcher" ON)
 option(BUILD_WIZARD             "Build Installation Wizard" ON)
 option(BUILD_MWINIIMPORTER      "Build MWiniImporter" ON)
@@ -68,6 +69,10 @@ if (APPLE)
     set(APP_BUNDLE_NAME "${CMAKE_PROJECT_NAME}.app")
 
     set(APP_BUNDLE_DIR "${OpenMW_BINARY_DIR}/${APP_BUNDLE_NAME}")
+    set(BUNDLE_RESOURCES_DIR "${APP_BUNDLE_DIR}/Contents/Resources")
+    # Resource subdirectories under files/ are copied at configure time, so the
+    # bundle resource root has to be known before add_subdirectory(files/).
+    set(OPENMW_RESOURCES_ROOT ${BUNDLE_RESOURCES_DIR})
 endif (APPLE)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/)
@@ -503,6 +508,19 @@ if(USE_LUAJIT)
     find_package(LuaJit REQUIRED)
     set(LUA_INCLUDE_DIR ${LuaJit_INCLUDE_DIR})
     set(LUA_LIBRARIES ${LuaJit_LIBRARIES})
+    # Some distributions install a separate <lua/...> header tree for stock Lua.
+    # sol3 prefers that layout when it exists, so stage LuaJIT headers behind the
+    # same prefix to keep the include family self-consistent.
+    set(LUA_COMPAT_INCLUDE_DIR ${CMAKE_BINARY_DIR}/luajit-compat)
+    file(MAKE_DIRECTORY ${LUA_COMPAT_INCLUDE_DIR}/lua)
+    file(GLOB LUAJIT_HEADER_FILES ${LuaJit_INCLUDE_DIR}/*)
+    foreach(LUAJIT_HEADER ${LUAJIT_HEADER_FILES})
+        get_filename_component(LUAJIT_HEADER_NAME ${LUAJIT_HEADER} NAME)
+        configure_file(
+            ${LUAJIT_HEADER}
+            ${LUA_COMPAT_INCLUDE_DIR}/lua/${LUAJIT_HEADER_NAME}
+            COPYONLY)
+    endforeach()
 else(USE_LUAJIT)
     find_package(Lua REQUIRED)
     add_compile_definitions(NO_LUAJIT)
@@ -521,6 +539,7 @@ include_directories(
     ${OPENAL_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
     ${BULLET_INCLUDE_DIRS}
+    ${LUA_COMPAT_INCLUDE_DIR}
     ${LUA_INCLUDE_DIR}
     ${SOL_INCLUDE_DIR}
     ${SOL_CONFIG_DIR}
@@ -684,6 +703,10 @@ add_subdirectory (components)
 # Apps and tools
 if (BUILD_OPENMW OR BUILD_OPENMW_TESTS)
     add_subdirectory( apps/openmw )
+endif()
+
+if (BUILD_OPENFO3 AND EXISTS "${CMAKE_SOURCE_DIR}/apps/openfo3/CMakeLists.txt")
+    add_subdirectory( apps/openfo3 )
 endif()
 
 if (BUILD_BSATOOL)

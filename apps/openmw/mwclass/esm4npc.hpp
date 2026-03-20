@@ -60,6 +60,7 @@ namespace MWClass
         static const ESM4::Npc* getTraitsRecord(const MWWorld::Ptr& ptr);
         static const ESM4::Race* getRace(const MWWorld::Ptr& ptr);
         static bool isFemale(const MWWorld::Ptr& ptr);
+        static bool isFo3Like(const ESM4::Npc& npc);
         static const std::vector<const ESM4::Armor*>& getEquippedArmor(const MWWorld::Ptr& ptr);
         static const std::vector<const ESM4::Clothing*>& getEquippedClothing(const MWWorld::Ptr& ptr);
 

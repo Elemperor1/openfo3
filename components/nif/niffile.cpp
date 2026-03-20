@@ -562,9 +562,10 @@ namespace Nif
         nif.read(mVersion);
         // 4.0.0.0 is an older, practically identical version of the format.
         // It's not used by Morrowind assets but Morrowind supports it.
-        static const std::array<uint32_t, 2> supportedVers = {
+        static const std::array<uint32_t, 3> supportedVers = {
             NIFStream::generateVersion(4, 0, 0, 0),
             NIFFile::VER_MW,
+            NIFFile::VER_BGS,
         };
         const bool supportedVersion
             = std::find(supportedVers.begin(), supportedVers.end(), mVersion) != supportedVers.end();
