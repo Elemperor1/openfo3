@@ -84,6 +84,50 @@ namespace
         return true;
     }
 
+    struct Fallout3RuntimeLayout
+    {
+        QString configHome;
+        QString dataHome;
+        QString cacheHome;
+        QString configDir;
+        QString userDataDir;
+        QString cacheDir;
+    };
+
+    Fallout3RuntimeLayout getFallout3RuntimeLayout(const QString& runtimeHome)
+    {
+        const QDir runtimeRoot(runtimeHome);
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)
+        const QString configHome = runtimeRoot.filePath(QStringLiteral(".config"));
+        const QString dataHome = runtimeRoot.filePath(QStringLiteral(".local/share"));
+        const QString cacheHome = runtimeRoot.filePath(QStringLiteral(".cache"));
+#else
+        const QString configHome = runtimeRoot.filePath(QStringLiteral("Library/Preferences"));
+        const QString dataHome = runtimeRoot.filePath(QStringLiteral("Library/Application Support"));
+        const QString cacheHome = runtimeRoot.filePath(QStringLiteral("Library/Caches"));
+#endif
+
+        return { configHome,
+            dataHome,
+            cacheHome,
+            QDir(configHome).filePath(QStringLiteral("openmw")),
+            QDir(dataHome).filePath(QStringLiteral("openmw")),
+            QDir(cacheHome).filePath(QStringLiteral("openmw")) };
+    }
+
+    void configureFallout3RuntimeEnvironment(QProcessEnvironment& environment, const Fallout3RuntimeLayout& layout,
+        const QString& runtimeHome)
+    {
+        environment.insert(QStringLiteral("HOME"), runtimeHome);
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)
+        environment.insert(QStringLiteral("XDG_CONFIG_HOME"), layout.configHome);
+        environment.insert(QStringLiteral("XDG_DATA_HOME"), layout.dataHome);
+        environment.insert(QStringLiteral("XDG_CACHE_HOME"), layout.cacheHome);
+#endif
+    }
+
     QStringList fallout3DataDirCandidates()
     {
         QStringList candidates;
@@ -340,12 +384,10 @@ QString Launcher::MainDialog::fallout3RuntimeHomePath() const
 bool Launcher::MainDialog::prepareFallout3RuntimeHome(QString* runtimeHomePath) const
 {
     const QString runtimeHome = fallout3RuntimeHomePath();
-    const QDir runtimeRoot(runtimeHome);
-    const QString runtimeConfigDir = runtimeRoot.filePath(QStringLiteral("Library/Preferences/openmw"));
-    const QString runtimeUserDataDir = runtimeRoot.filePath(QStringLiteral("Library/Application Support/openmw"));
+    const Fallout3RuntimeLayout layout = getFallout3RuntimeLayout(runtimeHome);
 
     QDir dir;
-    if (!dir.mkpath(runtimeConfigDir) || !dir.mkpath(runtimeUserDataDir))
+    if (!dir.mkpath(layout.configDir) || !dir.mkpath(layout.userDataDir) || !dir.mkpath(layout.cacheDir))
     {
         cfgError(tr("Error preparing OpenFO3 runtime configuration"),
             tr("<br><b>Could not create the isolated OpenFO3 runtime directories.</b><br><br>%0<br>")
@@ -353,7 +395,7 @@ bool Launcher::MainDialog::prepareFallout3RuntimeHome(QString* runtimeHomePath) 
         return false;
     }
 
-    QFile runtimeConfigFile(QDir(runtimeConfigDir).filePath(QStringLiteral("openmw.cfg")));
+    QFile runtimeConfigFile(QDir(layout.configDir).filePath(QStringLiteral("openmw.cfg")));
     if (!runtimeConfigFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
     {
         cfgError(tr("Error preparing OpenFO3 runtime configuration"),
@@ -369,7 +411,7 @@ bool Launcher::MainDialog::prepareFallout3RuntimeHome(QString* runtimeHomePath) 
 
     const QString sourceSettingsPath
         = QDir(Files::pathToQString(mCfgMgr.getUserConfigPath())).filePath(QStringLiteral("settings.cfg"));
-    const QString runtimeSettingsPath = QDir(runtimeConfigDir).filePath(QStringLiteral("settings.cfg"));
+    const QString runtimeSettingsPath = QDir(layout.configDir).filePath(QStringLiteral("settings.cfg"));
     QFile::remove(runtimeSettingsPath);
     if (QFileInfo::exists(sourceSettingsPath) && !QFile::copy(sourceSettingsPath, runtimeSettingsPath))
     {
@@ -1137,7 +1179,7 @@ void Launcher::MainDialog::play()
             return;
 
         QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
-        environment.insert(QStringLiteral("HOME"), runtimeHome);
+        configureFallout3RuntimeEnvironment(environment, getFallout3RuntimeLayout(runtimeHome), runtimeHome);
         Log(Debug::Info) << "Launching OpenFO3 with isolated HOME:" << runtimeHome.toUtf8().constData();
         if (mGameInvoker->startProcess(executable, arguments, environment, true))
             return qApp->quit();
