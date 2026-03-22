@@ -3,6 +3,7 @@
 
 #include <set>
 #include <type_traits>
+#include <string>
 
 #include <osg/Texture2D>
 
@@ -31,6 +32,8 @@ namespace SceneUtil
 
 namespace NifOsg
 {
+
+    const Nif::NiInterpolator* unwrapSimpleBlendInterpolator(const Nif::NiInterpolator* interpolator);
 
     class MatrixTransform;
 
@@ -284,6 +287,49 @@ namespace NifOsg
         FloatInterpolator mUScale;
         FloatInterpolator mVScale;
         std::set<unsigned int> mTextureUnits;
+    };
+
+    class FloatUniformController : public SceneUtil::StateSetUpdater, public SceneUtil::Controller
+    {
+    public:
+        FloatUniformController(std::string uniformName, const Nif::NiFloatInterpolator* interpolator,
+            float defaultValue = 0.f);
+        FloatUniformController(std::string uniformName, const Nif::NiFloatData* data, float defaultValue = 0.f);
+        FloatUniformController();
+        FloatUniformController(const FloatUniformController& copy, const osg::CopyOp& copyop);
+
+        META_Object(NifOsg, FloatUniformController)
+
+        void setDefaults(osg::StateSet* stateset) override;
+        void apply(osg::StateSet* stateset, osg::NodeVisitor* nv) override;
+
+    private:
+        std::string mUniformName;
+        FloatInterpolator mData;
+        float mDefaultValue{ 0.f };
+    };
+
+    class TextureTransformController : public SceneUtil::StateSetUpdater, public SceneUtil::Controller
+    {
+    public:
+        TextureTransformController(const Nif::NiTexturingProperty::TextureType texSlot, bool shaderMap,
+            uint32_t transformMember, const Nif::NiFloatInterpolator* interpolator);
+        TextureTransformController();
+        TextureTransformController(const TextureTransformController& copy, const osg::CopyOp& copyop);
+
+        META_Object(NifOsg, TextureTransformController)
+
+        void setDefaults(osg::StateSet* stateset) override;
+        void apply(osg::StateSet* stateset, osg::NodeVisitor* nv) override;
+
+    private:
+        void applyToTextureUnit(osg::StateSet* stateset, unsigned int unit, float value) const;
+        bool matchesTextureType(const osg::StateSet& stateset, unsigned int unit) const;
+
+        Nif::NiTexturingProperty::TextureType mTexSlot{ Nif::NiTexturingProperty::BaseTexture };
+        bool mShaderMap{ false };
+        uint32_t mTransformMember{ 0 };
+        FloatInterpolator mData;
     };
 
     class VisController : public SceneUtil::NodeCallback<VisController>, public SceneUtil::Controller

@@ -56,21 +56,47 @@ void ESM4::Note::load(ESM4::Reader& reader)
             case ESM::fourCC("MODB"):
                 reader.get(mBoundRadius);
                 break;
+            case ESM::fourCC("DATA"):
+                if (subHdr.dataSize >= 1)
+                    reader.get(mDataType);
+                if (subHdr.dataSize > 1)
+                    reader.skipSubRecordData(subHdr.dataSize - 1);
+                break;
+            case ESM::fourCC("ONAM"):
+                reader.getFormId(mOwningQuest);
+                break;
+            case ESM::fourCC("SNAM"):
+                if (subHdr.dataSize == 4)
+                {
+                    if (mDataType == 3)
+                        reader.getFormId(mVoiceActor);
+                    else
+                        reader.getFormId(mNoteSound);
+                }
+                else
+                {
+                    reader.skipSubRecordData();
+                }
+                break;
+            case ESM::fourCC("TNAM"):
+                if (subHdr.dataSize == 4 && mDataType == 3)
+                    reader.getFormId(mVoiceTopic);
+                else
+                    reader.getLocalizedString(mText);
+                break;
+            case ESM::fourCC("XNAM"):
+                reader.getZString(mImageFile);
+                break;
             case ESM::fourCC("YNAM"):
                 reader.getFormId(mPickUpSound);
                 break;
             case ESM::fourCC("ZNAM"):
                 reader.getFormId(mDropSound);
                 break;
-            case ESM::fourCC("DATA"):
             case ESM::fourCC("MODT"): // Model data
             case ESM::fourCC("MODC"):
             case ESM::fourCC("MODS"):
             case ESM::fourCC("MODF"): // Model data end
-            case ESM::fourCC("ONAM"):
-            case ESM::fourCC("SNAM"):
-            case ESM::fourCC("TNAM"):
-            case ESM::fourCC("XNAM"):
             case ESM::fourCC("OBND"):
             case ESM::fourCC("VMAD"):
             case ESM::fourCC("DNAM"): // FO4

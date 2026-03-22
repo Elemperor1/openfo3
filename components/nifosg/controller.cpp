@@ -1,9 +1,13 @@
 #include "controller.hpp"
 
+#include <algorithm>
+#include <utility>
+
 #include <osg/Material>
 #include <osg/MatrixTransform>
 #include <osg/TexMat>
 #include <osg/Texture2D>
+#include <osg/Uniform>
 
 #include <osgAnimation/Bone>
 
@@ -11,11 +15,55 @@
 
 #include <components/nif/data.hpp>
 #include <components/sceneutil/morphgeometry.hpp>
+#include <components/sceneutil/texturetype.hpp>
+#include <components/sceneutil/util.hpp>
 
 #include "matrixtransform.hpp"
 
 namespace NifOsg
 {
+
+    const Nif::NiInterpolator* unwrapSimpleBlendInterpolator(const Nif::NiInterpolator* interpolator)
+    {
+        const Nif::NiInterpolator* current = interpolator;
+        for (unsigned int depth = 0; current && depth < 4; ++depth)
+        {
+            switch (current->mRecordType)
+            {
+                case Nif::RC_NiBlendBoolInterpolator:
+                case Nif::RC_NiBlendFloatInterpolator:
+                case Nif::RC_NiBlendPoint3Interpolator:
+                case Nif::RC_NiBlendTransformInterpolator:
+                    break;
+                default:
+                    return current;
+            }
+
+            const Nif::NiBlendInterpolator* blend = static_cast<const Nif::NiBlendInterpolator*>(current);
+            if (!blend)
+                return current;
+
+            if (!blend->mSingleInterpolator.empty())
+            {
+                current = blend->mSingleInterpolator.getPtr();
+                continue;
+            }
+
+            const Nif::NiInterpolator* singleItem = nullptr;
+            for (const Nif::NiBlendInterpolator::Item& item : blend->mItems)
+            {
+                if (item.mInterpolator.empty())
+                    continue;
+                if (singleItem)
+                    return nullptr;
+                singleItem = item.mInterpolator.getPtr();
+            }
+
+            current = singleItem;
+        }
+
+        return current;
+    }
 
     ControllerFunction::ControllerFunction(const Nif::NiTimeController* ctrl)
         : mFrequency(ctrl->mFrequency)
@@ -340,15 +388,206 @@ namespace NifOsg
         }
     }
 
+    FloatUniformController::FloatUniformController(std::string uniformName, const Nif::NiFloatInterpolator* interpolator,
+        float defaultValue)
+        : mUniformName(std::move(uniformName))
+        , mDefaultValue(defaultValue)
+    {
+        if (interpolator)
+            mData = FloatInterpolator(interpolator);
+        else
+            mData = FloatInterpolator(Nif::FloatKeyMapPtr(), defaultValue);
+    }
+
+    FloatUniformController::FloatUniformController(
+        std::string uniformName, const Nif::NiFloatData* data, float defaultValue)
+        : mUniformName(std::move(uniformName))
+        , mDefaultValue(defaultValue)
+    {
+        if (data)
+            mData = FloatInterpolator(data->mKeyList, defaultValue);
+        else
+            mData = FloatInterpolator(Nif::FloatKeyMapPtr(), defaultValue);
+    }
+
+    FloatUniformController::FloatUniformController() {}
+
+    FloatUniformController::FloatUniformController(const FloatUniformController& copy, const osg::CopyOp& copyop)
+        : osg::Object(copy, copyop)
+        , StateSetUpdater(copy, copyop)
+        , Controller(copy)
+        , mUniformName(copy.mUniformName)
+        , mData(copy.mData)
+        , mDefaultValue(copy.mDefaultValue)
+    {
+    }
+
+    void FloatUniformController::setDefaults(osg::StateSet* stateset)
+    {
+        stateset->addUniform(new osg::Uniform(mUniformName.c_str(), mDefaultValue));
+    }
+
+    void FloatUniformController::apply(osg::StateSet* stateset, osg::NodeVisitor* nv)
+    {
+        if (!hasInput())
+            return;
+
+        float value = mData.interpKey(getInputValue(nv));
+        osg::Uniform* uniform = stateset->getUniform(mUniformName.c_str());
+        if (!uniform)
+            stateset->addUniform(new osg::Uniform(mUniformName.c_str(), value));
+        else
+            uniform->set(value);
+    }
+
+    TextureTransformController::TextureTransformController(
+        const Nif::NiTexturingProperty::TextureType texSlot, bool shaderMap, uint32_t transformMember,
+        const Nif::NiFloatInterpolator* interpolator)
+        : mTexSlot(texSlot)
+        , mShaderMap(shaderMap)
+        , mTransformMember(transformMember)
+    {
+        if (interpolator)
+            mData = FloatInterpolator(interpolator);
+        else
+            mData = FloatInterpolator(Nif::FloatKeyMapPtr(), 0.f);
+    }
+
+    TextureTransformController::TextureTransformController() {}
+
+    TextureTransformController::TextureTransformController(
+        const TextureTransformController& copy, const osg::CopyOp& copyop)
+        : osg::Object(copy, copyop)
+        , StateSetUpdater(copy, copyop)
+        , Controller(copy)
+        , mTexSlot(copy.mTexSlot)
+        , mShaderMap(copy.mShaderMap)
+        , mTransformMember(copy.mTransformMember)
+        , mData(copy.mData)
+    {
+    }
+
+    static std::string textureTypeName(Nif::NiTexturingProperty::TextureType texSlot)
+    {
+        using TextureType = Nif::NiTexturingProperty::TextureType;
+        switch (texSlot)
+        {
+            case TextureType::BaseTexture:
+                return "diffuseMap";
+            case TextureType::DarkTexture:
+                return "darkMap";
+            case TextureType::DetailTexture:
+                return "detailMap";
+            case TextureType::GlossTexture:
+                return "glossMap";
+            case TextureType::GlowTexture:
+                return "emissiveMap";
+            case TextureType::BumpTexture:
+                return "bumpMap";
+            case TextureType::DecalTexture:
+                return "decalMap";
+            default:
+                return {};
+        }
+    }
+
+    bool TextureTransformController::matchesTextureType(const osg::StateSet& stateset, unsigned int unit) const
+    {
+        const osg::StateAttribute* attr = stateset.getTextureAttribute(unit, osg::StateAttribute::TEXTURE);
+        const osg::Texture* texture = attr ? attr->asTexture() : nullptr;
+        if (!texture)
+            return false;
+
+        std::string expected = textureTypeName(mTexSlot);
+        if (expected.empty())
+            return false;
+
+        return SceneUtil::getTextureType(stateset, *texture, unit) == expected;
+    }
+
+    void TextureTransformController::setDefaults(osg::StateSet* stateset)
+    {
+        osg::ref_ptr<osg::TexMat> texMat(new osg::TexMat);
+        bool boundAny = false;
+        const osg::StateSet::TextureAttributeList& texAttributes = stateset->getTextureAttributeList();
+        for (unsigned int unit = 0; unit < texAttributes.size(); ++unit)
+        {
+            if (matchesTextureType(*stateset, unit))
+            {
+                stateset->setTextureAttributeAndModes(unit, texMat, osg::StateAttribute::ON);
+                boundAny = true;
+            }
+        }
+
+        if (!boundAny)
+            stateset->setTextureAttributeAndModes(0, texMat, osg::StateAttribute::ON);
+    }
+
+    void TextureTransformController::applyToTextureUnit(osg::StateSet* stateset, unsigned int unit, float value) const
+    {
+        osg::TexMat* texMat = dynamic_cast<osg::TexMat*>(
+            stateset->getTextureAttribute(unit, osg::StateAttribute::TEXMAT));
+        if (!texMat)
+        {
+            texMat = new osg::TexMat;
+            stateset->setTextureAttributeAndModes(unit, texMat, osg::StateAttribute::ON);
+        }
+
+        osg::Vec3f uvOrigin(0.5f, 0.5f, 0.f);
+        osg::Matrixf mat = osg::Matrixf::translate(uvOrigin);
+        switch (mTransformMember)
+        {
+            case 0:
+                mat.preMultTranslate(osg::Vec3f(-value, 0.f, 0.f));
+                break;
+            case 1:
+                mat.preMultTranslate(osg::Vec3f(0.f, value, 0.f));
+                break;
+            case 2:
+                mat.preMultScale(osg::Vec3f(std::max(value, 0.0001f), 1.f, 1.f));
+                break;
+            case 3:
+                mat.preMultScale(osg::Vec3f(1.f, std::max(value, 0.0001f), 1.f));
+                break;
+            default:
+                mat.preMult(osg::Matrixf::rotate(osg::Quat(value, osg::Vec3f(0.f, 0.f, 1.f))));
+                break;
+        }
+        mat.preMultTranslate(-uvOrigin);
+        texMat->setMatrix(mat);
+    }
+
+    void TextureTransformController::apply(osg::StateSet* stateset, osg::NodeVisitor* nv)
+    {
+        if (!hasInput())
+            return;
+
+        float value = mData.interpKey(getInputValue(nv));
+        const osg::StateSet::TextureAttributeList& texAttributes = stateset->getTextureAttributeList();
+        bool applied = false;
+        for (unsigned int unit = 0; unit < texAttributes.size(); ++unit)
+        {
+            if (matchesTextureType(*stateset, unit))
+            {
+                applyToTextureUnit(stateset, unit, value);
+                applied = true;
+            }
+        }
+
+        if (!applied)
+            applyToTextureUnit(stateset, 0, value);
+    }
+
     VisController::VisController(const Nif::NiVisController* ctrl, unsigned int mask)
         : mMask(mask)
     {
-        if (!ctrl->mInterpolator.empty())
+        const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(ctrl->mInterpolator.getPtr());
+        if (interpolator)
         {
-            if (ctrl->mInterpolator->mRecordType != Nif::RC_NiBoolInterpolator)
+            if (interpolator->mRecordType != Nif::RC_NiBoolInterpolator)
                 return;
 
-            mInterpolator = { static_cast<const Nif::NiBoolInterpolator*>(ctrl->mInterpolator.getPtr()) };
+            mInterpolator = { static_cast<const Nif::NiBoolInterpolator*>(interpolator) };
         }
         else if (!ctrl->mData.empty())
             mData = ctrl->mData->mKeys;
@@ -392,10 +631,11 @@ namespace NifOsg
 
     RollController::RollController(const Nif::NiRollController* ctrl)
     {
-        if (!ctrl->mInterpolator.empty())
+        const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(ctrl->mInterpolator.getPtr());
+        if (interpolator)
         {
-            if (ctrl->mInterpolator->mRecordType == Nif::RC_NiFloatInterpolator)
-                mData = FloatInterpolator(static_cast<const Nif::NiFloatInterpolator*>(ctrl->mInterpolator.getPtr()));
+            if (interpolator->mRecordType == Nif::RC_NiFloatInterpolator)
+                mData = FloatInterpolator(static_cast<const Nif::NiFloatInterpolator*>(interpolator));
         }
         else if (!ctrl->mData.empty())
             mData = FloatInterpolator(ctrl->mData->mKeyList, 1.f);
@@ -438,10 +678,11 @@ namespace NifOsg
     AlphaController::AlphaController(const Nif::NiAlphaController* ctrl, const osg::Material* baseMaterial)
         : mBaseMaterial(baseMaterial)
     {
-        if (!ctrl->mInterpolator.empty())
+        const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(ctrl->mInterpolator.getPtr());
+        if (interpolator)
         {
-            if (ctrl->mInterpolator->mRecordType == Nif::RC_NiFloatInterpolator)
-                mData = FloatInterpolator(static_cast<const Nif::NiFloatInterpolator*>(ctrl->mInterpolator.getPtr()));
+            if (interpolator->mRecordType == Nif::RC_NiFloatInterpolator)
+                mData = FloatInterpolator(static_cast<const Nif::NiFloatInterpolator*>(interpolator));
         }
         else if (!ctrl->mData.empty())
             mData = FloatInterpolator(ctrl->mData->mKeyList, 1.f);
@@ -480,10 +721,11 @@ namespace NifOsg
         : mTargetColor(ctrl->mTargetColor)
         , mBaseMaterial(baseMaterial)
     {
-        if (!ctrl->mInterpolator.empty())
+        const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(ctrl->mInterpolator.getPtr());
+        if (interpolator)
         {
-            if (ctrl->mInterpolator->mRecordType == Nif::RC_NiPoint3Interpolator)
-                mData = Vec3Interpolator(static_cast<const Nif::NiPoint3Interpolator*>(ctrl->mInterpolator.getPtr()));
+            if (interpolator->mRecordType == Nif::RC_NiPoint3Interpolator)
+                mData = Vec3Interpolator(static_cast<const Nif::NiPoint3Interpolator*>(interpolator));
         }
         else if (!ctrl->mData.empty())
             mData = Vec3Interpolator(ctrl->mData->mKeyList, osg::Vec3f(1, 1, 1));
@@ -551,8 +793,9 @@ namespace NifOsg
         , mDelta(ctrl->mDelta)
         , mTextures(textures)
     {
-        if (!ctrl->mInterpolator.empty() && ctrl->mInterpolator->mRecordType == Nif::RC_NiFloatInterpolator)
-            mData = static_cast<const Nif::NiFloatInterpolator*>(ctrl->mInterpolator.getPtr());
+        const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(ctrl->mInterpolator.getPtr());
+        if (interpolator && interpolator->mRecordType == Nif::RC_NiFloatInterpolator)
+            mData = static_cast<const Nif::NiFloatInterpolator*>(interpolator);
     }
 
     FlipController::FlipController(int texSlot, float delta, const std::vector<osg::ref_ptr<osg::Texture2D>>& textures)

@@ -33,6 +33,7 @@
 
 void ESM4::Reference::load(ESM4::Reader& reader)
 {
+    blank();
     mId = reader.hdr().record.getFormId();
     reader.adjustFormId(mId);
     mFlags = reader.hdr().record.flags;
@@ -375,4 +376,7 @@ void ESM4::Reference::load(ESM4::Reader& reader)
 //{
 // }
 
-void ESM4::Reference::blank() {}
+void ESM4::Reference::blank()
+{
+    *this = Reference{};
+}

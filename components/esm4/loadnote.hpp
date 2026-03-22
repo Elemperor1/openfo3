@@ -47,8 +47,16 @@ namespace ESM4
         std::string mFullName;
         std::string mModel;
         std::string mIcon;
+        std::string mText;
+        std::string mImageFile;
 
         float mBoundRadius;
+
+        std::uint8_t mDataType = 0;
+        ESM::FormId mOwningQuest;
+        ESM::FormId mNoteSound;
+        ESM::FormId mVoiceActor;
+        ESM::FormId mVoiceTopic;
 
         ESM::FormId mPickUpSound;
         ESM::FormId mDropSound;

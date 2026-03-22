@@ -21,6 +21,16 @@ uniform sampler2D emissiveMap;
 varying vec2 emissiveMapUV;
 #endif
 
+#if @envMap
+uniform sampler2D envMap;
+uniform float envMapScale;
+#endif
+
+#if @envMaskMap
+uniform sampler2D envMaskMap;
+varying vec2 envMaskMapUV;
+#endif
+
 #if @normalMap
 uniform sampler2D normalMap;
 varying vec2 normalMapUV;
@@ -97,10 +107,23 @@ void main()
 #endif
     vec3 lighting = diffuse + ambient + emission;
     vec3 specular = specularColor * specularLight * specStrength;
+    vec3 envReflection = vec3(0.0);
+
+#if @envMap
+    vec3 viewDir = normalize(-passViewPos);
+    vec3 reflected = reflect(viewDir, normalize(viewNormal));
+    float scale = max(envMapScale, 0.0);
+    float denom = max(2.0 * sqrt(dot(reflected.xy, reflected.xy) + (reflected.z + 1.0) * (reflected.z + 1.0)), 0.0001);
+    vec2 envMapUV = reflected.xy / denom + 0.5;
+    envReflection = texture2D(envMap, envMapUV).xyz * scale;
+#if @envMaskMap
+    envReflection *= texture2D(envMaskMap, envMaskMapUV).r;
+#endif
+#endif
 
     clampLightingResult(lighting);
 
-    gl_FragData[0].xyz = gl_FragData[0].xyz * lighting + specular;
+    gl_FragData[0].xyz = gl_FragData[0].xyz * lighting + specular + envReflection;
 
     gl_FragData[0] = applyFogAtDist(gl_FragData[0], euclideanDepth, linearDepth, far);
 

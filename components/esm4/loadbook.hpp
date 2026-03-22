@@ -92,6 +92,7 @@ namespace ESM4
         float mBoundRadius;
 
         std::string mText;
+        std::string mDescription;
         ESM::FormId mScriptId;
         std::string mIcon;
         std::uint16_t mEnchantmentPoints;

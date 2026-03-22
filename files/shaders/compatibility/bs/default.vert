@@ -20,6 +20,10 @@ varying vec2 diffuseMapUV;
 varying vec2 emissiveMapUV;
 #endif
 
+#if @envMaskMap
+varying vec2 envMaskMapUV;
+#endif
+
 #if @normalMap
 varying vec2 normalMapUV;
 varying vec4 passTangent;
@@ -61,6 +65,10 @@ void main(void)
 
 #if @emissiveMap
     emissiveMapUV = (gl_TextureMatrix[@emissiveMapUV] * gl_MultiTexCoord@emissiveMapUV).xy;
+#endif
+
+#if @envMaskMap
+    envMaskMapUV = (gl_TextureMatrix[@envMaskMapUV] * gl_MultiTexCoord@envMaskMapUV).xy;
 #endif
 
 #if @normalMap

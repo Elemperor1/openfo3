@@ -1,0 +1,207 @@
+How to use this checklist:
+
+- This file is the exhaustive Fallout 3 parity inventory for `openfo3`.
+- It is intentionally flatter and more exhaustive than the working roadmap.
+- Use `docs/openfo3-gameplay-roadmap.md` for execution order and near-term build phases.
+- Use `docs/openfo3-plan.md` for the original bootstrap/history context around the `openfo3` slice.
+- Not every item here belongs in the next milestone; many are later-phase parity or compatibility work.
+- Treat this file as the completeness ledger, not as the sprint board.
+- If the roadmap and checklist seem to disagree on timing, prefer the roadmap for sequencing and this file for coverage.
+
+You’re not going to get a literally perfect “every hidden edge case Bethesda ever shipped” list from anybody without months of reverse-engineering, but this is the closest thing to a full Fallout 3 engine-parity checklist I’d hand to a team starting an OpenMW-style fork.
+
+Checklist:
+
+- [ ] Load Fallout 3 master/plugin data correctly: `.esm` and `.esp`
+- [ ] Resolve records, overrides, load order, form IDs, references, placed objects, cells, dialogue, gameplay settings, AI settings, quests, scripts, and landscape data
+- [ ] Load asset archives correctly: `.bsa`
+- [ ] Support loose-file override behavior over archives
+- [ ] Load meshes, textures, animations, menus, sounds, music, fonts, FaceGen, lipsync, SpeedTree, and DLOD-related assets from FO3 archives
+- [ ] Preserve FO3-compatible path resolution and Data folder conventions
+- [ ] Support save/load in a way that preserves FO3 quest/script/state semantics
+- [ ] Support console/script plumbing needed for FO3 data and mod compatibility
+- [ ] Support GECK-authored quest/dialogue/package data semantics closely enough that existing FO3 content behaves correctly
+
+- [ ] Implement FO3 exterior worldspaces and interior cells
+- [ ] Implement Capital Wasteland traversal
+- [ ] Implement separate DLC worldspaces/interiors
+- [ ] Implement cell streaming, object activation, ownership, respawn/regeneration, and persistent references
+- [ ] Implement map markers, discovered/undiscovered states, and fast travel
+- [ ] Implement random encounter regions and one-shot/randomized encounter selection behavior
+- [ ] Implement unmarked locations and scripted encounter triggers
+- [ ] Implement settlement logic, player homes, containers, and safe-storage expectations
+- [ ] Implement navmesh/pathfinding behavior close enough for FO3 NPC/package logic to work
+- [ ] Implement doors, load transitions, elevators/teleporters, and linked references
+
+- [ ] First-person camera
+- [ ] Over-the-shoulder third-person camera
+- [ ] Camera toggle at runtime
+- [ ] FO3-style movement, sprintless locomotion, jumping, falling, swimming, ladder/elevator substitutes where applicable
+- [ ] Pip-Boy equip/unequip presentation and camera handling
+- [ ] Interaction prompts, activation, pickup, drag physics behavior, and grab/drop interactions
+- [ ] HUD: HP/AP bars, ammo, compass, markers, sneak indicator, condition feedback, radiation/limb/addiction warnings, subtitles, hit markers, XP/level-up notices
+- [ ] Menu stack: pause, settings, save/load, help, level-up, barter, repair, loot, dialogue, lockpick, hacking, wait, sleep, V.A.T.S.
+- [ ] Input rebinding/controller support matching FO3 expectations closely enough for menu and combat flow to feel right
+
+- [ ] Vault 101 intro flow: baby sequence, childhood sequence, GOAT/tutorial structure, and pre-exit respec
+- [ ] Name, sex, race/preset, facial customization, hair, age/face morph presentation as used by FO3
+- [ ] SPECIAL allocation with the seven primary attributes
+- [ ] All 13 FO3 skills with correct formulas, caps, tags, and derived-stat interactions
+- [ ] Derived stats and formulas: HP, AP, carry weight, crit chance, resistances, skill modifiers, etc.
+- [ ] XP gain from combat, quests, exploration, skill use/events where applicable
+- [ ] Level-up flow with skill-point spending and perk selection every level
+- [ ] Base-game level cap of 20
+- [ ] Broken Steel level cap extension to 30
+- [ ] Bobblehead effects
+- [ ] Skill book effects
+- [ ] Temporary and permanent stat modifiers from gear, chems, perks, quest rewards, and implants/effects where applicable
+
+- [ ] Implement all base-game perk selection rules and prerequisites
+- [ ] Implement all base-game regular perks
+- [ ] Implement all base-game special perks
+- [ ] Implement all base-game quest perks
+- [ ] Implement DLC perk additions and quest-perk additions
+- [ ] Implement perks that modify V.A.T.S., crits, skills, resistances, dialogue, companions, carry weight, radiation, and movement/combat subsystems
+- [ ] Implement perks with scripted effects, conditional effects, repeatable ranks, and one-off grant events
+
+- [ ] Real-time combat loop
+- [ ] V.A.T.S. active-pause targeting
+- [ ] Body-part targeting in V.A.T.S.
+- [ ] AP costs per queued action in V.A.T.S.
+- [ ] Slow-motion killcam behavior in V.A.T.S.
+- [ ] Weapon classes: small guns, energy weapons, big guns, melee, unarmed, explosives
+- [ ] Hit chance, spread, recoil, projectile/instant-hit behavior as used by FO3 weapons
+- [ ] Critical hits and crit formulas
+- [ ] Limb damage and crippling
+- [ ] Dismemberment and gore where FO3 supports it
+- [ ] Knockdown/stagger effects
+- [ ] Mines, grenades, placed explosives, traps, tripwires where used by content
+- [ ] Friendly fire, faction aggro, and ally hostility rules
+- [ ] Sneak attacks and stealth multipliers
+- [ ] Weapon bash behavior if present in FO3 content/ruleset
+- [ ] Ammo consumption, reloads, weapon jamming absence/presence according to FO3 rules
+- [ ] Weapon condition degradation with use
+- [ ] Armor/clothing condition degradation
+- [ ] Repair system using duplicate items and NPC repair services
+- [ ] Correct condition effects on weapon/armor performance where applicable
+
+- [ ] All item categories: weapons, armor, clothing, aid, ammo, misc, keys, notes, schematics, quest items
+- [ ] Equip slots and equip conflicts
+- [ ] Hotkeys/favorites behavior
+- [ ] Stat bonuses from apparel
+- [ ] Damage Resistance behavior
+- [ ] Radiation Resistance, Poison Resistance, Fire/energy/explosive interactions as used by FO3 data
+- [ ] Container UI and transfer rules
+- [ ] Weight, encumbrance, carry capacity, over-encumbered movement penalties
+- [ ] Loot ownership, stealing flags, and confiscation/crime responses
+- [ ] Item repair lists and valid donor-item relationships
+- [ ] Vendor inventories, caps, barter calculations, repair services, restocking behavior
+- [ ] Item condition display and sorting/filtering in Pip-Boy/loot/barter UI
+
+- [ ] Full dialogue system with topic/response trees
+- [ ] Speech/barter/stat/skill checks with displayed chance of success where FO3 shows it
+- [ ] Quest-stage setting via dialogue
+- [ ] Greeting/rumor/barks/idle dialogue
+- [ ] NPC disposition-like reactions as represented in FO3 systems
+- [ ] Barter menus and service menus
+- [ ] Terminal access and terminal UI
+- [ ] Hacking minigame with word selection, likeness count, dud removal/reset mechanics, lockout behavior, and attempt tracking
+- [ ] Lockpicking minigame with bobby pins, screwdriver/torque input, break chance, and skill-gated lock tiers
+- [ ] Workbench activation and crafting UI
+- [ ] Schematic-based crafting with required components
+- [ ] Multiple-copy schematic effects on crafted weapon condition/output where applicable
+- [ ] Quest notes, holotapes, and message boxes
+- [ ] Subtitles and voiced dialogue timing/lip sync
+
+- [ ] Karma system
+- [ ] Karma gains/losses from combat, theft, dialogue, quest choices, and item actions
+- [ ] Crime system: stealing, trespass, assault, murder, owned containers, witness/faction knowledge
+- [ ] Localized faction awareness of crimes rather than universal omniscience
+- [ ] Reputation-like NPC reaction changes derived from karma/crime/quest states
+- [ ] Begging/charity/water-giving/evil acts and other scripted karma adjustments used by quests/content
+- [ ] Good/neutral/evil thresholds for dialogue and companion gating
+- [ ] Essential/protected actor behaviors as used by quests
+- [ ] Arrest/hostility/bounty-equivalent town responses as FO3 defines them
+
+- [ ] Health, healing, and death flow
+- [ ] Sleeping and waiting
+- [ ] Bed ownership and sleep restrictions
+- [ ] Stimpaks, food, water, alcohol, chems, and scripted consumable effects
+- [ ] Radiation accumulation and thresholds
+- [ ] RadAway/Rad-X and radiation resistance interactions
+- [ ] Addictions and addiction curing
+- [ ] Poison and disease-like scripted status effects where FO3 content uses them
+- [ ] Crippled limb treatment via doctor/Doctor’s Bag-equivalent FO3 methods
+- [ ] Drowning/swimming hazards where relevant
+- [ ] Fall damage
+- [ ] Environmental hazards: traps, fire, electricity, gas/steam, scripted hazards, radiation volumes
+- [ ] Survival-ish world affordances used by quests, including food/water/radiation/trap concerns
+
+- [ ] NPC schedules, sandboxing, patrols, combat AI, fleeing, searching, idles, sleeping, eating, and use-item packages
+- [ ] Creature AI
+- [ ] Leveled actors and leveled loot
+- [ ] Detection, stealth, line of sight, hearing, and alert states
+- [ ] Followers/companions system
+- [ ] Maximum companion party rule: player + Dogmeat + one humanoid companion
+- [ ] Dogmeat behavior as a special companion slot case
+- [ ] All 8 permanent companions
+- [ ] Karma-gated recruitment rules for applicable companions
+- [ ] Companion commands: follow/wait/dismiss/trade/use ammo/equipment rules as FO3 supports them
+- [ ] Companion death/essential-state behavior, Puppies! interactions, and DLC changes where applicable
+- [ ] Escort/follow NPCs used by quests
+- [ ] Vendors, guards, hostile factions, neutral factions, and scripted allegiance flips
+
+- [ ] Pip-Boy 3000 main shell and animation flow
+- [ ] Items tab
+- [ ] Data tab: quests, notes, local/world map, stats pages
+- [ ] Radio tab with station selection and signal handling
+- [ ] Quest objective display and active/inactive toggles
+- [ ] World map markers and fast-travel selection
+- [ ] Local map generation/display
+- [ ] Status page for SPECIAL/skills/perks/effects
+- [ ] Aid/effects listing and active effect breakdown
+- [ ] Objective compass, quest markers, location markers, and radio-signal quest markers
+- [ ] Loading screens and loading-screen tips/art hooks
+- [ ] Help/tutorial popups
+
+- [ ] All base-game quests
+- [ ] All side quests, misc objectives, and tutorial quests
+- [ ] Quest objectives, stages, aliases/references, script fragments/effects, and fail/success branches
+- [ ] Quest-target markers and journal updates
+- [ ] Branching endings and end slides/narration behavior
+- [ ] Scripted set pieces, escort sequences, ambushes, activator chains, and cutscene-like camera moments
+- [ ] Holotape/terminal-driven quests
+- [ ] Conditional world-state changes from quest completion
+- [ ] DLC questlines for Operation: Anchorage, The Pitt, Broken Steel, Point Lookout, and Mothership Zeta
+- [ ] Post-main-quest continuation required by Broken Steel
+- [ ] Achievement/trophy triggers if you care about platform-parity behavior
+
+- [ ] Galaxy News Radio and Enclave Radio
+- [ ] Quest-related radio signals
+- [ ] 3D positional ambient sound
+- [ ] Music playback and exploration/combat transitions
+- [ ] Voice playback, subtitles, and lip sync timing
+- [ ] Weapon, impact, explosion, creature, UI, and environment SFX
+- [ ] Radio environmental mixing behavior
+- [ ] Bink or equivalent support for FO3 video assets if used by shipped content/tooling
+- [ ] Facial animation/FaceGen support needed for FO3 conversations and chargen
+
+- [ ] Base-game Washington, D.C./Capital Wasteland content parity
+- [ ] Base-game creatures, NPCs, factions, items, locations, quests, radio stations, random encounters, bobbleheads, skill books, and player homes
+- [ ] Operation: Anchorage content parity, including the military-simulation setup and its unique quest/equipment flow
+- [ ] The Pitt content parity, including Pittsburgh worldspace/quests and its distinct item/perk content
+- [ ] Broken Steel content parity, including post-ending continuation, level-cap 30, new quests/perks/items
+- [ ] Point Lookout content parity, including the Maryland swamp worldspace and its quest/content additions
+- [ ] Mothership Zeta content parity, including the alien-ship worldspace and related quest/content additions
+- [ ] Compatibility target for Fallout 3 GOTY data set, not just vanilla disc content
+
+- [ ] FO3 script command coverage sufficient for vanilla + DLC
+- [ ] Quest/package/dialogue command behavior
+- [ ] V.A.T.S.-related weapon and combat settings support
+- [ ] FO3 menu XML behavior needed by Pip-Boy/HUD/menus
+- [ ] Mod/plugin loading and conflict behavior that existing FO3 mods expect
+- [ ] Archive invalidation or equivalent loose-file override support
+- [ ] INI/settings behavior for major gameplay, display, audio, and control options
+- [ ] Error tolerance for dirty/quirky FO3 data where vanilla content relies on it
+- [ ] Deterministic enough behavior that vanilla quests do not softlock
+- [ ] Eventually, test against vanilla, GOTY, and representative FOSE-less mods as your minimum compatibility bar

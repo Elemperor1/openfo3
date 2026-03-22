@@ -1,5 +1,10 @@
 # OpenFO3 Plan
 
+This document is the bootstrap/history plan for the `openfo3` slice.
+
+- Use [`/Users/jacobcyber/Documents/openfo3/docs/openfo3-gameplay-roadmap.md`](/Users/jacobcyber/Documents/openfo3/docs/openfo3-gameplay-roadmap.md) for phased gameplay delivery order.
+- Use [`/Users/jacobcyber/Documents/openfo3/checklist.txt`](/Users/jacobcyber/Documents/openfo3/checklist.txt) as the exhaustive Fallout 3 parity ledger.
+
 ## Boot-To-World Milestone
 - Keep `BUILD_OPENFO3` off by default until the slice is stable.
 - Build a separate `openfo3` executable under `apps/openfo3` without mutating `apps/openmw` into a Fallout 3 runtime.

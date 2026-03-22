@@ -367,10 +367,18 @@ namespace NifOsg
                 if (key->mData.empty() && key->mInterpolator.empty())
                     continue;
 
-                if (!key->mInterpolator.empty() && key->mInterpolator->mRecordType != Nif::RC_NiTransformInterpolator)
+                const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(key->mInterpolator.getPtr());
+                if (!key->mInterpolator.empty() && !interpolator)
                 {
                     Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController " << key->mRecordIndex
-                                      << " in " << mFilename;
+                                      << " in " << mFilename << ": " << key->mInterpolator->mRecordName;
+                    continue;
+                }
+
+                if (interpolator && interpolator->mRecordType != Nif::RC_NiTransformInterpolator)
+                {
+                    Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController " << key->mRecordIndex
+                                      << " in " << mFilename << ": " << interpolator->mRecordName;
                     continue;
                 }
 
@@ -619,6 +627,7 @@ namespace NifOsg
             attachNiSourceTexture("envMap", textureEffect->mTexture.getPtr(), textureEffect->wrapS(),
                 textureEffect->wrapT(), uvSet, stateset, boundTextures);
 
+            stateset->addUniform(new osg::Uniform("envMapScale", 1.f));
             stateset->addUniform(new osg::Uniform("envMapColor", osg::Vec4f(1, 1, 1, 1)));
             return true;
         }
@@ -943,12 +952,19 @@ namespace NifOsg
                     const Nif::NiKeyframeController* key = static_cast<const Nif::NiKeyframeController*>(ctrl.getPtr());
                     if (key->mData.empty() && key->mInterpolator.empty())
                         continue;
-                    if (!key->mInterpolator.empty()
-                        && key->mInterpolator->mRecordType != Nif::RC_NiTransformInterpolator)
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(key->mInterpolator.getPtr());
+                    if (!key->mInterpolator.empty() && !interpolator)
                     {
-                        Log(Debug::Error)
-                            << "Unsupported interpolator type for NiKeyframeController " << key->mRecordIndex << " in "
-                            << mFilename << ": " << key->mInterpolator->mRecordName;
+                        Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
+                                          << key->mRecordIndex << " in " << mFilename << ": "
+                                          << key->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiTransformInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
+                                          << key->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
                         continue;
                     }
                     osg::ref_ptr<KeyframeController> callback = new KeyframeController(key);
@@ -971,12 +987,19 @@ namespace NifOsg
                     const Nif::NiVisController* visctrl = static_cast<const Nif::NiVisController*>(ctrl.getPtr());
                     if (visctrl->mData.empty() && visctrl->mInterpolator.empty())
                         continue;
-                    if (!visctrl->mInterpolator.empty()
-                        && visctrl->mInterpolator->mRecordType != Nif::RC_NiBoolInterpolator)
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(visctrl->mInterpolator.getPtr());
+                    if (!visctrl->mInterpolator.empty() && !interpolator)
                     {
-                        Log(Debug::Error)
-                            << "Unsupported interpolator type for NiVisController " << visctrl->mRecordIndex << " in "
-                            << mFilename << ": " << visctrl->mInterpolator->mRecordName;
+                        Log(Debug::Error) << "Unsupported interpolator type for NiVisController "
+                                          << visctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << visctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiBoolInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiVisController "
+                                          << visctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
                         continue;
                     }
                     osg::ref_ptr<VisController> callback(new VisController(visctrl, Loader::getHiddenNodeMask()));
@@ -988,12 +1011,19 @@ namespace NifOsg
                     const Nif::NiRollController* rollctrl = static_cast<const Nif::NiRollController*>(ctrl.getPtr());
                     if (rollctrl->mData.empty() && rollctrl->mInterpolator.empty())
                         continue;
-                    if (!rollctrl->mInterpolator.empty()
-                        && rollctrl->mInterpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(rollctrl->mInterpolator.getPtr());
+                    if (!rollctrl->mInterpolator.empty() && !interpolator)
                     {
-                        Log(Debug::Error)
-                            << "Unsupported interpolator type for NiRollController " << rollctrl->mRecordIndex << " in "
-                            << mFilename << ": " << rollctrl->mInterpolator->mRecordName;
+                        Log(Debug::Error) << "Unsupported interpolator type for NiRollController "
+                                          << rollctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << rollctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiRollController "
+                                          << rollctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
                         continue;
                     }
                     osg::ref_ptr<RollController> callback = new RollController(rollctrl);
@@ -1025,12 +1055,19 @@ namespace NifOsg
                     const Nif::NiAlphaController* alphactrl = static_cast<const Nif::NiAlphaController*>(ctrl.getPtr());
                     if (alphactrl->mData.empty() && alphactrl->mInterpolator.empty())
                         continue;
-                    if (!alphactrl->mInterpolator.empty()
-                        && alphactrl->mInterpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(alphactrl->mInterpolator.getPtr());
+                    if (!alphactrl->mInterpolator.empty() && !interpolator)
                     {
-                        Log(Debug::Error)
-                            << "Unsupported interpolator type for NiAlphaController " << alphactrl->mRecordIndex
-                            << " in " << mFilename << ": " << alphactrl->mInterpolator->mRecordName;
+                        Log(Debug::Error) << "Unsupported interpolator type for NiAlphaController "
+                                          << alphactrl->mRecordIndex << " in " << mFilename << ": "
+                                          << alphactrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiAlphaController "
+                                          << alphactrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
                         continue;
                     }
                     osg::ref_ptr<AlphaController> osgctrl = new AlphaController(alphactrl, baseMaterial);
@@ -1041,21 +1078,78 @@ namespace NifOsg
                 {
                     const Nif::NiMaterialColorController* matctrl
                         = static_cast<const Nif::NiMaterialColorController*>(ctrl.getPtr());
-                    Nif::NiInterpolatorPtr interp = matctrl->mInterpolator;
-                    if (matctrl->mData.empty() && interp.empty())
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(matctrl->mInterpolator.getPtr());
+                    if (matctrl->mData.empty() && !interpolator)
                         continue;
+                    if (!matctrl->mInterpolator.empty() && !interpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiMaterialColorController "
+                                          << matctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << matctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
                     if (mVersion <= Nif::NIFFile::VER_MW
                         && matctrl->mTargetColor == Nif::NiMaterialColorController::TargetColor::Specular)
                         continue;
-                    if (!interp.empty() && interp->mRecordType != Nif::RC_NiPoint3Interpolator)
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiPoint3Interpolator)
                     {
-                        Log(Debug::Error)
-                            << "Unsupported interpolator type for NiMaterialColorController " << matctrl->mRecordIndex
-                            << " in " << mFilename << ": " << interp->mRecordName;
+                        Log(Debug::Error) << "Unsupported interpolator type for NiMaterialColorController "
+                                          << matctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
                         continue;
                     }
                     osg::ref_ptr<MaterialColorController> osgctrl = new MaterialColorController(matctrl, baseMaterial);
                     setupController(matctrl, osgctrl, animflags);
+                    composite->addController(osgctrl);
+                }
+                else if (ctrl->mRecordType == Nif::RC_BSMaterialEmittanceMultController)
+                {
+                    const auto* mulctrl = static_cast<const Nif::NiFloatInterpController*>(ctrl.getPtr());
+                    if (mulctrl->mInterpolator.empty())
+                        continue;
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(mulctrl->mInterpolator.getPtr());
+                    if (!mulctrl->mInterpolator.empty() && !interpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for BSMaterialEmittanceMultController "
+                                          << mulctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << mulctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for BSMaterialEmittanceMultController "
+                                          << mulctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
+                        continue;
+                    }
+                    osg::ref_ptr<FloatUniformController> osgctrl = new FloatUniformController("emissiveMult",
+                        static_cast<const Nif::NiFloatInterpolator*>(interpolator), 1.f);
+                    setupController(mulctrl, osgctrl, animflags);
+                    composite->addController(osgctrl);
+                }
+                else if (ctrl->mRecordType == Nif::RC_BSRefractionStrengthController)
+                {
+                    const auto* refctrl = static_cast<const Nif::NiFloatInterpController*>(ctrl.getPtr());
+                    if (refctrl->mInterpolator.empty())
+                        continue;
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(refctrl->mInterpolator.getPtr());
+                    if (!refctrl->mInterpolator.empty() && !interpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for BSRefractionStrengthController "
+                                          << refctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << refctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for BSRefractionStrengthController "
+                                          << refctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
+                        continue;
+                    }
+                    osg::ref_ptr<FloatUniformController> osgctrl = new FloatUniformController("distortionStrength",
+                        static_cast<const Nif::NiFloatInterpolator*>(interpolator), 0.f);
+                    setupController(refctrl, osgctrl, animflags);
                     composite->addController(osgctrl);
                 }
                 else
@@ -1126,12 +1220,19 @@ namespace NifOsg
                 if (ctrl->mRecordType == Nif::RC_NiFlipController)
                 {
                     const Nif::NiFlipController* flipctrl = static_cast<const Nif::NiFlipController*>(ctrl.getPtr());
-                    if (!flipctrl->mInterpolator.empty()
-                        && flipctrl->mInterpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(flipctrl->mInterpolator.getPtr());
+                    if (!flipctrl->mInterpolator.empty() && !interpolator)
                     {
-                        Log(Debug::Error)
-                            << "Unsupported interpolator type for NiFlipController " << flipctrl->mRecordIndex << " in "
-                            << mFilename << ": " << flipctrl->mInterpolator->mRecordName;
+                        Log(Debug::Error) << "Unsupported interpolator type for NiFlipController "
+                                          << flipctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << flipctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiFlipController "
+                                          << flipctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
                         continue;
                     }
                     std::vector<osg::ref_ptr<osg::Texture2D>> textures;
@@ -1160,6 +1261,34 @@ namespace NifOsg
                         textures.push_back(texture);
                     }
                     osg::ref_ptr<FlipController> callback(new FlipController(flipctrl, textures));
+                    setupController(ctrl.getPtr(), callback, animflags);
+                    composite->addController(callback);
+                }
+                else if (ctrl->mRecordType == Nif::RC_NiTextureTransformController)
+                {
+                    const Nif::NiTextureTransformController* texctrl
+                        = static_cast<const Nif::NiTextureTransformController*>(ctrl.getPtr());
+                    if (texctrl->mData.empty() && texctrl->mInterpolator.empty())
+                        continue;
+                    const Nif::NiInterpolator* interpolator
+                        = unwrapSimpleBlendInterpolator(texctrl->mInterpolator.getPtr());
+                    if (!texctrl->mInterpolator.empty() && !interpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiTextureTransformController "
+                                          << texctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << texctrl->mInterpolator->mRecordName;
+                        continue;
+                    }
+                    if (interpolator && interpolator->mRecordType != Nif::RC_NiFloatInterpolator)
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiTextureTransformController "
+                                          << texctrl->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
+                        continue;
+                    }
+                    osg::ref_ptr<TextureTransformController> callback = new TextureTransformController(
+                        texctrl->mTexSlot, texctrl->mShaderMap, texctrl->mTransformMember,
+                        interpolator ? static_cast<const Nif::NiFloatInterpolator*>(interpolator) : nullptr);
                     setupController(ctrl.getPtr(), callback, animflags);
                     composite->addController(callback);
                 }
@@ -2326,6 +2455,14 @@ namespace NifOsg
                         attachExternalTexture("emissiveMap", VFS::Path::toNormalized(textureSet->mTextures[i]), wrapS,
                             wrapT, uvSet, stateset, boundTextures);
                         break;
+                    case Nif::BSShaderTextureSet::TextureType::Environment:
+                        attachExternalTexture("envMap", VFS::Path::toNormalized(textureSet->mTextures[i]), wrapS, wrapT,
+                            uvSet, stateset, boundTextures);
+                        break;
+                    case Nif::BSShaderTextureSet::TextureType::EnvironmentMask:
+                        attachExternalTexture("envMaskMap", VFS::Path::toNormalized(textureSet->mTextures[i]), wrapS,
+                            wrapT, uvSet, stateset, boundTextures);
+                        break;
                     default:
                     {
                         Log(Debug::Info) << "Unhandled texture stage " << i << " on shape \"" << nodeName << "\" in "
@@ -2485,6 +2622,7 @@ namespace NifOsg
                     node->setUserValue("shaderPrefix", std::string(getBSShaderPrefix(texprop->mType)));
                     osg::StateSet* stateset = node->getOrCreateStateSet();
                     clearBoundTextures(stateset, boundTextures);
+                    stateset->addUniform(new osg::Uniform("envMapScale", texprop->mEnvMapScale));
                     if (!texprop->mTextureSet.empty())
                         handleTextureSet(texprop->mTextureSet.getPtr(), texprop->wrapS(), texprop->wrapT(),
                             node->getName(), stateset, boundTextures);
@@ -2522,6 +2660,7 @@ namespace NifOsg
                     node->setUserValue("shaderPrefix", std::string(getBSLightingShaderPrefix(texprop->mType)));
                     osg::StateSet* stateset = node->getOrCreateStateSet();
                     clearBoundTextures(stateset, boundTextures);
+                    stateset->addUniform(new osg::Uniform("envMapScale", texprop->mEnvMapScale));
                     if (Bgsm::MaterialFilePtr material
                         = getShaderMaterial(VFS::Path::toNormalized(texprop->mName), mMaterialManager))
                     {

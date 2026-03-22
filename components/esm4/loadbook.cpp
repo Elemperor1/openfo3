@@ -51,6 +51,9 @@ void ESM4::Book::load(ESM4::Reader& reader)
             case ESM::fourCC("DESC"):
                 reader.getLocalizedString(mText);
                 break;
+            case ESM::fourCC("CNAM"):
+                reader.getLocalizedString(mDescription);
+                break;
             case ESM::fourCC("DATA"):
             {
                 switch (subHdr.dataSize)
@@ -113,7 +116,6 @@ void ESM4::Book::load(ESM4::Reader& reader)
             case ESM::fourCC("OBND"):
             case ESM::fourCC("KSIZ"):
             case ESM::fourCC("KWDA"):
-            case ESM::fourCC("CNAM"):
             case ESM::fourCC("INAM"):
             case ESM::fourCC("VMAD"):
             case ESM::fourCC("DAMC"): // Destructible

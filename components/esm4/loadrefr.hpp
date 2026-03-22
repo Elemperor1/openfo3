@@ -59,10 +59,10 @@ namespace ESM4
 
     struct TeleportDest
     {
-        ESM::FormId destDoor;
-        ESM::Position destPos;
+        ESM::FormId destDoor{};
+        ESM::Position destPos{};
         std::uint32_t flags = 0; // 0x01 no alarm (only in TES5)
-        ESM::FormId transitionInterior;
+        ESM::FormId transitionInterior{};
     };
 
     struct RadioStationData
@@ -105,11 +105,11 @@ namespace ESM4
         RadioStationData mRadio;
 
         TeleportDest mDoor;
-        bool mIsLocked;
-        std::int8_t mLockLevel;
-        ESM::FormId mKey;
+        bool mIsLocked = false;
+        std::int8_t mLockLevel = 0;
+        ESM::FormId mKey{};
 
-        ESM::FormId mTargetRef;
+        ESM::FormId mTargetRef{};
 
         void load(ESM4::Reader& reader);
         // void save(ESM4::Writer& writer) const;
