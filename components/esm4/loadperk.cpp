@@ -1,7 +1,8 @@
 #include "loadperk.hpp"
 
+#include <components/debug/debuglog.hpp>
+
 #include <limits>
-#include <stdexcept>
 
 #include "reader.hpp"
 
@@ -40,9 +41,9 @@ namespace ESM4
             }
         }
 
-        TargetCondition loadCondition(Reader& reader, const ESM4::SubRecordHeader& subHdr, std::uint8_t runOnOverride)
+        bool loadCondition(
+            Reader& reader, const ESM4::SubRecordHeader& subHdr, std::uint8_t runOnOverride, TargetCondition& condition)
         {
-            TargetCondition condition{};
             if (subHdr.dataSize == 20)
             {
                 reader.get(&condition, 20);
@@ -60,55 +61,72 @@ namespace ESM4
             }
             else
             {
-                throw std::runtime_error("Unsupported PERK CTDA size " + std::to_string(subHdr.dataSize));
+                Log(Debug::Warning) << "Skipping unsupported PERK CTDA size " << subHdr.dataSize;
+                reader.skipSubRecordData();
+                return false;
             }
 
             adjustConditionFormIds(condition, reader);
-            return condition;
+            return true;
         }
 
         PerkEntryPointData loadEntryPointData(Reader& reader, std::uint8_t functionType, std::uint8_t entryPointFunction,
-            const ESM4::SubRecordHeader& subHdr)
+            const ESM4::SubRecordHeader& subHdr, std::size_t& consumed)
         {
+            consumed = 0;
             if (functionType == 4)
             {
                 reader.skipSubRecordData();
+                consumed = subHdr.dataSize;
                 return std::monostate{};
             }
 
             if (functionType == 1)
             {
+                if (subHdr.dataSize < sizeof(float))
+                    return std::monostate{};
                 float value = 0.f;
                 reader.get(value);
+                consumed = sizeof(float);
                 return value;
             }
 
             if (functionType == 2 && entryPointFunction != 5)
             {
+                if (subHdr.dataSize < sizeof(float) * 2u)
+                    return std::monostate{};
                 std::array<float, 2> values{};
                 reader.get(values[0]);
                 reader.get(values[1]);
+                consumed = sizeof(float) * 2u;
                 return values;
             }
 
             if (functionType == 3)
             {
+                if (subHdr.dataSize < sizeof(ESM::FormId32))
+                    return std::monostate{};
                 ESM::FormId formId;
                 reader.getFormId(formId);
+                consumed = sizeof(ESM::FormId32);
                 return formId;
             }
 
             if (functionType == 5 || (functionType == 2 && entryPointFunction == 5))
             {
+                if (subHdr.dataSize < sizeof(std::uint32_t) + sizeof(float))
+                    return std::monostate{};
                 PerkActorValueModifier modifier;
                 reader.get(modifier.actorValue);
                 reader.get(modifier.value);
+                consumed = sizeof(std::uint32_t) + sizeof(float);
                 return modifier;
             }
 
             std::vector<std::uint8_t> raw(subHdr.dataSize);
             if (!raw.empty())
                 reader.get(raw.data(), raw.size());
+            consumed = raw.size();
             return raw;
         }
 
@@ -149,9 +167,11 @@ namespace ESM4
                     break;
                 case ESM::fourCC("CTDA"):
                 {
+                    TargetCondition condition{};
                     if (currentEffect == std::numeric_limits<std::size_t>::max())
                     {
-                        mConditions.push_back(loadCondition(reader, subHdr, 0));
+                        if (loadCondition(reader, subHdr, 0, condition))
+                            mConditions.push_back(condition);
                     }
                     else
                     {
@@ -161,7 +181,8 @@ namespace ESM4
                             currentConditionBlock = mEffects[currentEffect].mConditionBlocks.size() - 1;
                         }
                         PerkEffectConditionBlock& block = mEffects[currentEffect].mConditionBlocks[currentConditionBlock];
-                        block.conditions.push_back(loadCondition(reader, subHdr, block.runOn));
+                        if (loadCondition(reader, subHdr, block.runOn, condition))
+                            block.conditions.push_back(condition);
                     }
                     break;
                 }
@@ -200,6 +221,11 @@ namespace ESM4
                             }
                             case 1:
                             {
+                                if (subHdr.dataSize < sizeof(ESM::FormId32))
+                                {
+                                    reader.skipSubRecordData();
+                                    break;
+                                }
                                 ESM::FormId ability;
                                 reader.getFormId(ability);
                                 skipRemainingSubRecordData(reader, subHdr, sizeof(ESM::FormId32));
@@ -282,8 +308,10 @@ namespace ESM4
                     PerkEffect& effect = mEffects[currentEffect];
                     if (effect.mHasEntryPointData)
                     {
+                        std::size_t consumed = 0;
                         effect.mEntryPointData = loadEntryPointData(
-                            reader, effect.mEntryPointFunctionType, effect.mEntryPointDataHeader.function, subHdr);
+                            reader, effect.mEntryPointFunctionType, effect.mEntryPointDataHeader.function, subHdr, consumed);
+                        skipRemainingSubRecordData(reader, subHdr, consumed);
                     }
                     else
                     {

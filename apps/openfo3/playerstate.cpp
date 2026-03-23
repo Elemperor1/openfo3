@@ -168,16 +168,44 @@ namespace
 
     bool evaluateCondition(const PlayerState& state, const ESM4::TargetCondition& condition)
     {
+        if ((condition.condition & ESM4::CTF_UseGlobal) != 0)
+            return false;
+
+        const auto compareValue = [&](float lhs) {
+            constexpr float epsilon = 0.0001f;
+            const std::uint32_t op = condition.condition & 0xE0u;
+            switch (op)
+            {
+                case ESM4::CTF_EqualTo:
+                    return std::fabs(lhs - condition.comparison) <= epsilon;
+                case ESM4::CTF_NotEqualTo:
+                    return std::fabs(lhs - condition.comparison) > epsilon;
+                case ESM4::CTF_GreaterThan:
+                    return lhs > condition.comparison;
+                case ESM4::CTF_GrThOrEqTo:
+                    return lhs >= condition.comparison;
+                case ESM4::CTF_LessThan:
+                    return lhs < condition.comparison;
+                case ESM4::CTF_LeThOrEqTo:
+                    return lhs <= condition.comparison;
+                default:
+                    return false;
+            }
+        };
+
         switch (condition.functionIndex)
         {
             case ESM4::FUN_GetBaseActorValue:
             case ESM4::FUN_GetActorValue:
             case ESM4::FUN_GetPermanentActorValue:
-                return static_cast<float>(actorValueFromState(state, condition.param1)) >= condition.comparison;
+                return compareValue(static_cast<float>(actorValueFromState(state, condition.param1)));
             case ESM4::FUN_HasPerk:
-                return std::any_of(state.chosenPerks.begin(), state.chosenPerks.end(), [&](const ChosenPerk& perk) {
+            {
+                const bool hasPerk = std::any_of(state.chosenPerks.begin(), state.chosenPerks.end(), [&](const ChosenPerk& perk) {
                     return perk.perkId == ESM::FormId::fromUint32(condition.param1);
                 });
+                return compareValue(hasPerk ? 1.f : 0.f);
+            }
             default:
                 return true;
         }
@@ -615,15 +643,28 @@ namespace OpenFO3
         if (selectedPerkRank(state, perk.mId) >= std::max<int>(perk.mData.ranks, 1))
             return false;
 
+        bool hasConditionResult = false;
+        bool conditionResult = true;
         for (const ESM4::TargetCondition& condition : perk.mConditions)
         {
             if (!isSupportedPerkConditionFunction(condition.functionIndex))
                 return false;
-            if (!evaluateCondition(state, condition))
-                return false;
+
+            const bool current = evaluateCondition(state, condition);
+            if (!hasConditionResult)
+            {
+                conditionResult = current;
+                hasConditionResult = true;
+                continue;
+            }
+
+            if ((condition.condition & ESM4::CTF_Combine) != 0)
+                conditionResult = conditionResult || current;
+            else
+                conditionResult = conditionResult && current;
         }
 
-        return true;
+        return conditionResult;
     }
 
     bool selectPerk(PlayerState& state, const LoadedContent& content, const ESM4::Perk& perk)

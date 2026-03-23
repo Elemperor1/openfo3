@@ -107,4 +107,61 @@ namespace
         EXPECT_FALSE(OpenFO3::selectPerk(state, content, perk));
         EXPECT_EQ(state.progression.unspentPerks, 1);
     }
+
+    TEST(OpenFO3PlayerState, PerkConditionOperatorGreaterThanIsRespected)
+    {
+        OpenFO3::LoadedContent content;
+        OpenFO3::PlayerState state = OpenFO3::seedPrototypePlayerState(content);
+        OpenFO3::grantExperience(state, content, 250);
+
+        ESM4::Perk perk;
+        perk.mId = ESM::FormId::fromUint32(0x01020306);
+        perk.mEditorId = "ScienceAbove50";
+        perk.mData.playable = 1;
+        perk.mData.ranks = 1;
+        perk.mData.minLevel = 2;
+
+        ESM4::TargetCondition condition{};
+        condition.functionIndex = ESM4::FUN_GetActorValue;
+        condition.param1 = 40; // Science
+        condition.comparison = 50.f;
+        condition.condition = ESM4::CTF_GreaterThan;
+        perk.mConditions.push_back(condition);
+
+        EXPECT_FALSE(OpenFO3::canSelectPerk(state, perk));
+
+        state.trainedSkills[OpenFO3::Fo3Skill::Science] += 1;
+        OpenFO3::recomputePlayerState(state, content);
+        EXPECT_TRUE(OpenFO3::canSelectPerk(state, perk));
+    }
+
+    TEST(OpenFO3PlayerState, PerkConditionCombineFlagActsAsOr)
+    {
+        OpenFO3::LoadedContent content;
+        OpenFO3::PlayerState state = OpenFO3::seedPrototypePlayerState(content);
+        OpenFO3::grantExperience(state, content, 250);
+
+        ESM4::Perk perk;
+        perk.mId = ESM::FormId::fromUint32(0x01020307);
+        perk.mEditorId = "LockpickOrScience";
+        perk.mData.playable = 1;
+        perk.mData.ranks = 1;
+        perk.mData.minLevel = 2;
+
+        ESM4::TargetCondition first{};
+        first.functionIndex = ESM4::FUN_GetActorValue;
+        first.param1 = 36; // Lockpick
+        first.comparison = 55.f;
+        first.condition = ESM4::CTF_GrThOrEqTo;
+        perk.mConditions.push_back(first);
+
+        ESM4::TargetCondition second{};
+        second.functionIndex = ESM4::FUN_GetActorValue;
+        second.param1 = 40; // Science
+        second.comparison = 50.f;
+        second.condition = ESM4::CTF_GrThOrEqTo | ESM4::CTF_Combine;
+        perk.mConditions.push_back(second);
+
+        EXPECT_TRUE(OpenFO3::canSelectPerk(state, perk));
+    }
 }

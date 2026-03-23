@@ -400,7 +400,7 @@ namespace NifOsg
                     if (key->mInterpolator->mRecordType == Nif::RC_NiPathInterpolator)
                     {
                         logKnownUnsupportedOnce(
-                            "NiKeyframeController:NiPathInterpolator",
+                            "NiKeyframeController:NiPathInterpolator:" + std::string(mFilename.value()),
                             "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
                                 + std::string(mFilename.value()));
                     }
@@ -418,7 +418,7 @@ namespace NifOsg
                     if (interpolator->mRecordType == Nif::RC_NiPathInterpolator)
                     {
                         logKnownUnsupportedOnce(
-                            "NiKeyframeController:NiPathInterpolator",
+                            "NiKeyframeController:NiPathInterpolator:" + std::string(mFilename.value()),
                             "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
                                 + std::string(mFilename.value()));
                     }
@@ -1007,7 +1007,7 @@ namespace NifOsg
                         if (key->mInterpolator->mRecordType == Nif::RC_NiPathInterpolator)
                         {
                             logKnownUnsupportedOnce(
-                                "NiKeyframeController:NiPathInterpolator",
+                                "NiKeyframeController:NiPathInterpolator:" + std::string(mFilename.value()),
                                 "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
                                     + std::string(mFilename.value()));
                         }
@@ -1024,7 +1024,7 @@ namespace NifOsg
                         if (interpolator->mRecordType == Nif::RC_NiPathInterpolator)
                         {
                             logKnownUnsupportedOnce(
-                                "NiKeyframeController:NiPathInterpolator",
+                                "NiKeyframeController:NiPathInterpolator:" + std::string(mFilename.value()),
                                 "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
                                     + std::string(mFilename.value()));
                         }
@@ -1109,7 +1109,7 @@ namespace NifOsg
                 else if (isKnownFo3AmbientController(*ctrl.getPtr()))
                 {
                     logKnownUnsupportedOnce(
-                        "UnhandledController:" + ctrl->mRecordName,
+                        "UnhandledController:" + ctrl->mRecordName + ":" + std::string(mFilename.value()),
                         "Skipping known unsupported controller " + ctrl->mRecordName + " in "
                             + std::string(mFilename.value()));
                 }
