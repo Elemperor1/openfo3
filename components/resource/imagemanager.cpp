@@ -84,6 +84,9 @@ namespace Resource
 
     osg::ref_ptr<osg::Image> ImageManager::getImage(VFS::Path::NormalizedView path, bool disableFlip)
     {
+        if (path.empty())
+            return mWarningImage;
+
         osg::ref_ptr<osg::Object> obj = mCache->getRefFromObjectCache(path);
         if (obj)
             return osg::ref_ptr<osg::Image>(static_cast<osg::Image*>(obj.get()));

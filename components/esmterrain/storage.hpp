@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <mutex>
+#include <set>
 
 #include <components/terrain/defs.hpp>
 #include <components/terrain/storage.hpp>
@@ -162,6 +163,8 @@ namespace ESMTerrain
 
         std::map<VFS::Path::Normalized, Terrain::LayerInfo, std::less<>> mLayerInfoMap;
         std::mutex mLayerInfoMutex;
+        std::set<ESM::FormId> mMissingEsm4LandTextures;
+        std::mutex mMissingEsm4LandTexturesMutex;
 
         std::string mNormalMapPattern;
         std::string mNormalHeightMapPattern;
@@ -172,7 +175,7 @@ namespace ESMTerrain
 
         Terrain::LayerInfo getLayerInfo(VFS::Path::NormalizedView texture);
         Terrain::LayerInfo getTextureSetLayerInfo(const ESM4::TextureSet& txst);
-        Terrain::LayerInfo getLandTextureLayerInfo(ESM::FormId id);
+        Terrain::LayerInfo getLandTextureLayerInfo(ESM::FormId id, const Terrain::LayerInfo* fallback = nullptr);
 
         void getEsm4Blendmaps(float chunkSize, const osg::Vec2f& chunkCenter, ImageVector& blendmaps,
             std::vector<Terrain::LayerInfo>& layerList, ESM::RefId worldspace);

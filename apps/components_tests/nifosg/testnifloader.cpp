@@ -1,5 +1,6 @@
 #include "../nif/node.hpp"
 
+#include <components/nif/controller.hpp>
 #include <components/nif/node.hpp>
 #include <components/nif/property.hpp>
 #include <components/nifosg/nifloader.hpp>
@@ -110,6 +111,35 @@ osg::Group {
   }
 }
 )");
+    }
+
+    TEST_F(NifOsgLoaderTest, shouldSkipNiPathInterpolatorOnKeyframeController)
+    {
+        Nif::NiAVObject node;
+        init(node);
+
+        Nif::NiKeyframeController controller;
+        init(static_cast<Nif::NiTimeController&>(controller));
+        controller.mRecordType = Nif::RC_NiKeyframeController;
+        controller.mRecordName = "NiKeyframeController";
+        controller.mFlags |= Nif::NiTimeController::Flag_Active;
+
+        Nif::NiPathInterpolator interpolator;
+        interpolator.mRecordType = Nif::RC_NiPathInterpolator;
+        interpolator.mRecordName = "NiPathInterpolator";
+
+        controller.mInterpolator = Nif::NiInterpolatorPtr(&interpolator);
+        node.mController = Nif::NiTimeControllerPtr(&controller);
+
+        Nif::NIFFile file(testNif);
+        file.mRoots.push_back(&node);
+
+        osg::ref_ptr<osg::Node> result = Loader::load(file, &mImageManager, &mMaterialManager);
+
+        osg::Group* root = result->asGroup();
+        ASSERT_NE(root, nullptr);
+        ASSERT_EQ(root->getNumChildren(), 1u);
+        EXPECT_EQ(root->getChild(0)->getUpdateCallback(), nullptr);
     }
 
     std::string formatOsgNodeForBSShaderProperty(std::string_view shaderPrefix)

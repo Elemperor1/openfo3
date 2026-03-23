@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenFO3 Playtest"
+  short_description: "Launch and inspect the local OpenFO3 prototype."
+  default_prompt: "Use $openfo3-playtest to launch, inspect, and lightly drive the OpenFO3 prototype in this repository."

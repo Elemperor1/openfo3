@@ -1,0 +1,73 @@
+[13:59:51.774 *] Crash handler installed
+[13:59:51.775 *] Loading config file: /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/openmw.cfg
+[13:59:51.776 *] Loading config file: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Preferences/openmw/openmw.cfg
+[13:59:51.776 *] Logs dir: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Preferences/openmw/
+[13:59:51.776 *] User data dir: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Application Support/openmw/
+[13:59:51.776 *] Screenshots dir: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Application Support/openmw/screenshots
+[13:59:51.776 I] OpenFO3 prototype
+[13:59:51.776 I] OpenMW version 0.51.0
+[13:59:51.776 I] Revision: cf849f34d1
+[13:59:51.777 I] Loading settings file: /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/defaults.bin
+[13:59:51.778 I] Using default (English) font encoding.
+[13:59:51.778 I] Using OpenFO3 resource data directory /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/resources/vfs
+[13:59:52.211 I] OpenFO3 GL extensions ready=1
+[13:59:52.211 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Meshes.bsa
+[13:59:52.218 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Textures.bsa
+[13:59:52.226 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Voices.bsa
+[13:59:52.263 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Sound.bsa
+[13:59:52.265 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Misc.bsa
+[13:59:52.266 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - MenuVoices.bsa
+[13:59:52.292 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Anchorage - Main.bsa
+[13:59:52.297 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Anchorage - Sounds.bsa
+[13:59:52.297 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/ThePitt - Main.bsa
+[13:59:52.303 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/ThePitt - Sounds.bsa
+[13:59:52.304 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/BrokenSteel - Main.bsa
+[13:59:52.308 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/BrokenSteel - Sounds.bsa
+[13:59:52.309 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/PointLookout - Main.bsa
+[13:59:52.313 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/PointLookout - Sounds.bsa
+[13:59:52.313 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Zeta - Main.bsa
+[13:59:52.316 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Zeta - Sounds.bsa
+[13:59:52.319 I] Adding data directory /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/resources/vfs
+[13:59:52.323 I] Adding data directory /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/../Resources/resources/vfs-mw
+[13:59:52.324 I] Adding data directory /Users/jacobcyber/Documents/openfo3/game_files/Data
+[13:59:52.370 I] OpenFO3 shader bootstrap: lightingMethod=0 useUBO=0 shadows_enabled=0
+[13:59:52.374 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout3.esm
+[13:59:53.982 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/Anchorage.esm
+[13:59:54.081 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/ThePitt.esm
+[13:59:54.136 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/BrokenSteel.esm
+[13:59:54.187 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/PointLookout.esm
+[13:59:54.295 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/Zeta.esm
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x1000926 from source cell (0, 0) to bucket (9, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x1000963 from source cell (0, 0) to bucket (7, -11)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x100099a from source cell (0, 0) to bucket (10, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x100099b from source cell (0, 0) to bucket (9, -6)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x100099d from source cell (0, 0) to bucket (9, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009a0 from source cell (0, 0) to bucket (10, -6)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009a2 from source cell (0, 0) to bucket (10, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009a3 from source cell (0, 0) to bucket (9, -6)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009ad from source cell (0, 0) to bucket (9, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009ae from source cell (0, 0) to bucket (9, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009af from source cell (0, 0) to bucket (9, -7)
+[13:59:54.595 I] OpenFO3 spatially re-bucketed ref FormId:0x10009b3 from source cell (0, 0) to bucket (10, -7)
+[13:59:54.658 I] OpenFO3 spatially re-bucketed 8680 exterior refs by world position; far-outlier refs=7847
+[13:59:54.801 I] OpenFO3 bootstrap cell FormId:0x2dbb worldspace FormId:0xa74 coords=(-1, -7)
+[13:59:54.801 I] OpenFO3 streaming config: viewingDistance=7168 requestedTerrainHalfGridSize=2 requestedLocalTerrainHalfGridSize=2 terrainHalfGridSize=2 farVisualHalfGridSize=2 nearFullHalfGridSize=2 interactionHalfGridSize=1 landmarkHalfGridSize=2 requestedDistantTerrain=0 distantTerrain=0
+[13:59:54.805 W] LandTexture not found: 0xa8b
+[13:59:54.816 V] Disabling Multiview (disabled by config)
+[13:59:54.880 I] Unhandled texture stage 3 on shape "SuburbanRubblePile01b:0" in meshes/architecture/suburban/rubblepiles/suburbanrubblepile01b.nif
+[13:59:54.908 I] OpenFO3 populated bucket FormId:0xa74 (-2, -8) mode=Interaction refs=6 instantiated=6 renderable=6 effectOnly=0 collisions=4 skippedMissingBase=0 skippedMissingModel=0 boundsCenter=(-5765.05, -29266.5, 14075.6) radius=3177.71
+[13:59:54.935 V] Skipping known unsupported controller NiControllerManager in meshes/architecture/megaton/ramshacklepolelightslng02.nif
+[13:59:54.935 V] Skipping known unsupported controller NiMultiTargetTransformController in meshes/architecture/megaton/ramshacklepolelightslng02.nif
+[13:59:54.938 I] OpenFO3 populated bucket FormId:0xa74 (-1, -8) mode=Interaction refs=27 instantiated=27 renderable=27 effectOnly=0 collisions=21 skippedMissingBase=0 skippedMissingModel=0 boundsCenter=(-1956.48, -29076.8, 13059.6) radius=3234.94
+[13:59:55.013 I] OpenFO3 populated bucket FormId:0xa74 (-2, -7) mode=Interaction refs=127 instantiated=121 renderable=112 effectOnly=9 collisions=79 skippedMissingBase=6 skippedMissingModel=0 boundsCenter=(-5000.58, -26437.9, 13016.5) radius=3424.92
+[13:59:55.024 V] Skipping known unsupported controller NiPSysEmitterCtlr in meshes/effects/ambient/fxwaterspray01.nif
+[13:59:55.024 V] Skipping known unsupported controller NiPSysUpdateCtlr in meshes/effects/ambient/fxwaterspray01.nif
+[13:59:55.108 V] Skipping unsupported NiPathInterpolator on NiKeyframeController in meshes/effects/ambient/megatonfanltrays01.nif
+[13:59:55.119 I] OpenFO3 populated bucket FormId:0xa74 (-1, -7) mode=Interaction refs=599 instantiated=552 renderable=494 effectOnly=58 collisions=344 skippedMissingBase=47 skippedMissingModel=0 boundsCenter=(-1790.82, -26864.6, 13375) radius=5059.81
+[13:59:55.119 I] OpenFO3 populated bucket FormId:0xa74 (0, -7) mode=Interaction refs=10 instantiated=10 renderable=10 effectOnly=0 collisions=8 skippedMissingBase=0 skippedMissingModel=0 boundsCenter=(-17.825, -27125.7, 13256.9) radius=2569.71
+[13:59:55.119 I] OpenFO3 populated bucket FormId:0xa74 (-2, -6) mode=Interaction refs=20 instantiated=19 renderable=18 effectOnly=1 collisions=14 skippedMissingBase=1 skippedMissingModel=0 boundsCenter=(-4834.07, -23570.2, 13253.7) radius=2247.83
+[13:59:55.144 I] OpenFO3 populated bucket FormId:0xa74 (-1, -6) mode=Interaction refs=148 instantiated=141 renderable=124 effectOnly=17 collisions=79 skippedMissingBase=6 skippedMissingModel=1 boundsCenter=(-2703.87, -23018.2, 13284.1) radius=4172.15
+[13:59:55.144 I] OpenFO3 populated bucket FormId:0xa74 (-1, -5) mode=NearFull refs=1 instantiated=0 renderable=0 effectOnly=0 collisions=0 skippedMissingBase=1 skippedMissingModel=0
+[13:59:55.144 I] OpenFO3 loaded 11 terrain cells around bootstrap cell
+[13:59:55.144 I] OpenFO3 populated render buckets for 8 exterior cells around bootstrap cell
+[13:59:55.145 I] OpenFO3 initial camera target 0x14ac4 kind=static name="MegatonDeckSupportSht" ref=(-4604.68, -26678, 12342.7) aim=(-3889.04, -26884.9, 12604.3) clusterSize=92 useBoundCenter=0 camera=(-4364.74, -26672.9, 12522.7)

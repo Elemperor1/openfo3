@@ -1,12 +1,16 @@
 set(OPENFO3_SOURCES
+    contentstore.cpp
     engine.cpp
     main.cpp
     options.cpp
+    playerstate.cpp
 )
 
 set(OPENFO3_HEADERS
+    contentstore.hpp
     engine.hpp
     options.hpp
+    playerstate.hpp
 )
 
 source_group(apps/openfo3 FILES ${OPENFO3_SOURCES} ${OPENFO3_HEADERS})

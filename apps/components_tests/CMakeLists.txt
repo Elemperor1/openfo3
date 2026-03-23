@@ -70,6 +70,10 @@ file(GLOB UNITTEST_SRC_FILES
 
     esm4/includes.cpp
 
+    ../openfo3/contentstore.cpp
+    ../openfo3/playerstate.cpp
+    openfo3/testplayerstate.cpp
+
     fx/lexer.cpp
     fx/technique.cpp
 
@@ -82,8 +86,10 @@ file(GLOB UNITTEST_SRC_FILES
     nifosg/testnifloader.cpp
 
     esmterrain/testgridsampling.cpp
+    esmterrain/teststorage.cpp
 
     resource/testobjectcache.cpp
+    resource/testimagemanager.cpp
     resource/testresourcesystem.cpp
 
     vfs/testpathutil.cpp

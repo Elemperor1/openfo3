@@ -1,4 +1,6 @@
 #include "engine.hpp"
+#include "contentstore.hpp"
+#include "playerstate.hpp"
 
 #include <components/debug/debuglog.hpp>
 #include <components/esm/exteriorcelllocation.hpp>
@@ -142,220 +144,23 @@ namespace
     constexpr std::uint32_t sObjectNodeMask = 0x2;
     constexpr std::uint32_t sHiddenNodeMask = 0x4;
 
-    enum class ObjectKind
-    {
-        Static,
-        Door,
-        Container,
-        Activator,
-        Terminal,
-        MovableStatic,
-        Book,
-        Note,
-        Aid,
-        Ammo,
-        Armor,
-        Key,
-        Light,
-        Weapon,
-        Misc,
-    };
-
-    std::string_view toString(ObjectKind kind)
-    {
-        switch (kind)
-        {
-            case ObjectKind::Static:
-                return "static";
-            case ObjectKind::Door:
-                return "door";
-            case ObjectKind::Container:
-                return "container";
-            case ObjectKind::Activator:
-                return "activator";
-            case ObjectKind::Terminal:
-                return "terminal";
-            case ObjectKind::MovableStatic:
-                return "movable static";
-            case ObjectKind::Book:
-                return "book";
-            case ObjectKind::Note:
-                return "note";
-            case ObjectKind::Aid:
-                return "aid";
-            case ObjectKind::Ammo:
-                return "ammo";
-            case ObjectKind::Armor:
-                return "armor";
-            case ObjectKind::Key:
-                return "key";
-            case ObjectKind::Light:
-                return "light";
-            case ObjectKind::Weapon:
-                return "weapon";
-            case ObjectKind::Misc:
-                return "misc";
-        }
-        return "object";
-    }
-
-    bool isInteractiveKind(ObjectKind kind)
-    {
-        switch (kind)
-        {
-            case ObjectKind::Door:
-            case ObjectKind::Container:
-            case ObjectKind::Activator:
-            case ObjectKind::Terminal:
-            case ObjectKind::Book:
-            case ObjectKind::Note:
-            case ObjectKind::Aid:
-            case ObjectKind::Ammo:
-            case ObjectKind::Armor:
-            case ObjectKind::Key:
-            case ObjectKind::Light:
-            case ObjectKind::Weapon:
-            case ObjectKind::Misc:
-                return true;
-            case ObjectKind::Static:
-            case ObjectKind::MovableStatic:
-                return false;
-        }
-        return false;
-    }
-
-    bool isReadableKind(ObjectKind kind)
-    {
-        return kind == ObjectKind::Book || kind == ObjectKind::Note;
-    }
-
-    bool isBlockingInteractiveKind(ObjectKind kind)
-    {
-        switch (kind)
-        {
-            case ObjectKind::Door:
-            case ObjectKind::Container:
-            case ObjectKind::Activator:
-            case ObjectKind::Terminal:
-                return true;
-            case ObjectKind::Book:
-            case ObjectKind::Note:
-            case ObjectKind::Aid:
-            case ObjectKind::Ammo:
-            case ObjectKind::Armor:
-            case ObjectKind::Key:
-            case ObjectKind::Light:
-            case ObjectKind::Weapon:
-            case ObjectKind::Misc:
-            case ObjectKind::Static:
-            case ObjectKind::MovableStatic:
-                return false;
-        }
-
-        return false;
-    }
-
-    bool isWalkableSupportKind(ObjectKind kind)
-    {
-        switch (kind)
-        {
-            case ObjectKind::Static:
-            case ObjectKind::MovableStatic:
-            case ObjectKind::Activator:
-                return true;
-            case ObjectKind::Door:
-            case ObjectKind::Container:
-            case ObjectKind::Terminal:
-            case ObjectKind::Book:
-            case ObjectKind::Note:
-            case ObjectKind::Aid:
-            case ObjectKind::Ammo:
-            case ObjectKind::Armor:
-            case ObjectKind::Key:
-            case ObjectKind::Light:
-            case ObjectKind::Weapon:
-            case ObjectKind::Misc:
-                return false;
-        }
-
-        return false;
-    }
-
-    int bootstrapScoreForKind(ObjectKind kind)
-    {
-        switch (kind)
-        {
-            case ObjectKind::Door:
-                return 40;
-            case ObjectKind::Container:
-                return 32;
-            case ObjectKind::Terminal:
-                return 28;
-            case ObjectKind::Book:
-            case ObjectKind::Note:
-                return 18;
-            case ObjectKind::Aid:
-            case ObjectKind::Ammo:
-            case ObjectKind::Armor:
-            case ObjectKind::Key:
-            case ObjectKind::Light:
-            case ObjectKind::Weapon:
-            case ObjectKind::Misc:
-                return 10;
-            case ObjectKind::Activator:
-                return 8;
-            case ObjectKind::Static:
-            case ObjectKind::MovableStatic:
-                return 0;
-        }
-        return 0;
-    }
-
-    int settlementBootstrapBonus(const ESM4::Cell& cell)
-    {
-        std::string label = cell.mFullName;
-        if (!cell.mEditorId.empty())
-        {
-            if (!label.empty())
-                label.push_back(' ');
-            label += cell.mEditorId;
-        }
-
-        const std::string lower = Misc::StringUtils::lowerCase(label);
-        if (lower.empty())
-            return 0;
-
-        static constexpr std::array<std::pair<std::string_view, int>, 11> sPreferredSettlements = { {
-            { "megaton", 50000 },
-            { "big town", 46000 },
-            { "canterbury commons", 44000 },
-            { "rivet city", 42000 },
-            { "tenpenny tower", 40000 },
-            { "underworld", 38000 },
-            { "arefu", 36000 },
-            { "paradise falls", 34000 },
-            { "temple of union", 32000 },
-            { "republic of dave", 30000 },
-            { "oasis", 28000 },
-        } };
-
-        for (const auto& [keyword, bonus] : sPreferredSettlements)
-        {
-            if (lower.find(keyword) != std::string::npos)
-                return bonus;
-        }
-
-        static constexpr std::array<std::string_view, 6> sGenericSettlementKeywords = {
-            "town", "village", "commons", "market", "settlement", "plaza",
-        };
-        for (std::string_view keyword : sGenericSettlementKeywords)
-        {
-            if (lower.find(keyword) != std::string::npos)
-                return 18000;
-        }
-
-        return 0;
-    }
+    using OpenFO3::BaseRecordData;
+    using OpenFO3::BootstrapCell;
+    using OpenFO3::ExteriorBucketKey;
+    using OpenFO3::LoadedContent;
+    using OpenFO3::ObjectKind;
+    using OpenFO3::WorldBounds;
+    using OpenFO3::bucketLabel;
+    using OpenFO3::bucketWorldspace;
+    using OpenFO3::bucketX;
+    using OpenFO3::bucketY;
+    using OpenFO3::isBlockingInteractiveKind;
+    using OpenFO3::isInteractiveKind;
+    using OpenFO3::isLockableKind;
+    using OpenFO3::isReadableKind;
+    using OpenFO3::isWalkableSupportKind;
+    using OpenFO3::makeExteriorBucketKey;
+    using OpenFO3::toString;
 
     int initialViewScoreForKind(ObjectKind kind)
     {
@@ -387,128 +192,6 @@ namespace
         }
         return 0;
     }
-
-    struct BaseRecordData
-    {
-        ObjectKind mKind = ObjectKind::Static;
-        std::string mEditorId;
-        std::string mFullName;
-        std::string mModel;
-        std::string mText;
-        std::string mResultText;
-        std::string mIcon;
-        std::string mCategory;
-        int mValue = 0;
-        float mWeight = 0.f;
-        int mItemCount = 0;
-        bool mReadable = false;
-        bool mNoTake = false;
-        std::vector<ESM4::InventoryItem> mContainerItems;
-    };
-
-    int settlementBootstrapBonus(const BaseRecordData& base, const ESM4::Reference& ref)
-    {
-        std::string label;
-        auto append = [&](std::string_view value) {
-            if (value.empty())
-                return;
-            if (!label.empty())
-                label.push_back(' ');
-            label.append(value);
-        };
-
-        append(ref.mFullName);
-        append(base.mFullName);
-        append(ref.mEditorId);
-        append(base.mEditorId);
-        append(base.mModel);
-
-        const std::string lower = Misc::StringUtils::lowerCase(label);
-        if (lower.empty())
-            return 0;
-
-        static constexpr std::array<std::pair<std::string_view, int>, 11> sPreferredSettlementRefs = { {
-            { "megaton", 1400 },
-            { "bigtown", 1200 },
-            { "big town", 1200 },
-            { "canterbury", 1100 },
-            { "rivetcity", 1100 },
-            { "rivet city", 1100 },
-            { "tenpenny", 1000 },
-            { "underworld", 1000 },
-            { "arefu", 950 },
-            { "paradisefalls", 900 },
-            { "paradise falls", 900 },
-        } };
-
-        for (const auto& [keyword, bonus] : sPreferredSettlementRefs)
-        {
-            if (lower.find(keyword) != std::string::npos)
-                return bonus;
-        }
-
-        return 0;
-    }
-
-    struct WorldBounds
-    {
-        bool mValid = false;
-        float mMinX = 0.f;
-        float mMaxX = 0.f;
-        float mMinY = 0.f;
-        float mMaxY = 0.f;
-
-        void include(float x, float y)
-        {
-            if (!mValid)
-            {
-                mValid = true;
-                mMinX = mMaxX = x;
-                mMinY = mMaxY = y;
-                return;
-            }
-
-            mMinX = std::min(mMinX, x);
-            mMaxX = std::max(mMaxX, x);
-            mMinY = std::min(mMinY, y);
-            mMaxY = std::max(mMaxY, y);
-        }
-    };
-
-    using ExteriorBucketKey = std::tuple<ESM::RefId, int, int>;
-
-    ExteriorBucketKey makeExteriorBucketKey(ESM::RefId worldspace, int x, int y)
-    {
-        return std::make_tuple(worldspace, x, y);
-    }
-
-    ESM::RefId bucketWorldspace(const ExteriorBucketKey& key)
-    {
-        return std::get<0>(key);
-    }
-
-    int bucketX(const ExteriorBucketKey& key)
-    {
-        return std::get<1>(key);
-    }
-
-    int bucketY(const ExteriorBucketKey& key)
-    {
-        return std::get<2>(key);
-    }
-
-    std::string bucketLabel(const ExteriorBucketKey& key)
-    {
-        std::ostringstream stream;
-        stream << bucketWorldspace(key).serializeText() << " (" << bucketX(key) << ", " << bucketY(key) << ")";
-        return stream.str();
-    }
-
-    struct BootstrapCell
-    {
-        ESM::RefId mId;
-        const ESM4::Cell* mCell = nullptr;
-    };
 
     enum class BucketLoadMode
     {
@@ -592,11 +275,6 @@ namespace
         return isWalkableSupportKind(metadata.mKind) && metadata.mBoundRadius >= sMinimumWalkableSupportRadius;
     }
 
-    bool isLockableKind(ObjectKind kind)
-    {
-        return kind == ObjectKind::Door || kind == ObjectKind::Container || kind == ObjectKind::Terminal;
-    }
-
     struct InventoryStack
     {
         ESM::FormId mBaseId;
@@ -662,6 +340,14 @@ namespace
         Inventory,
         Read,
         Access,
+        Status,
+        LevelUp,
+    };
+
+    enum class LevelUpStage
+    {
+        Skills,
+        Perks,
     };
 
     enum class AccessPromptActionType
@@ -675,12 +361,6 @@ namespace
     {
         AccessPromptActionType mType = AccessPromptActionType::Close;
         std::string mLabel;
-    };
-
-    struct PlayerCapabilities
-    {
-        int mLockpick = 50;
-        int mScience = 50;
     };
 
     struct ResolvedDoorDestination
@@ -858,19 +538,6 @@ namespace
         return {};
     }
 
-    std::string preferredBookText(std::string_view title, const ESM4::Book& record)
-    {
-        std::string description = normalizeReadableText(record.mDescription);
-        if (!isGenericBookText(description, title))
-            return description;
-
-        std::string text = normalizeReadableText(record.mText);
-        if (!isGenericBookText(text, title))
-            return text;
-
-        return {};
-    }
-
     NodeRenderStats analyzeSceneNode(osg::Node& node, bool effectPath, bool repairMaskedNodes)
     {
         effectPath = effectPath || hasSoftEffectFlag(node) || usesDistortionRenderBin(node.getStateSet());
@@ -938,568 +605,6 @@ namespace
 
         return hitDistance;
     }
-
-    class LoadedContent
-    {
-    public:
-        void load(const Files::Collections& fileCollections, const std::vector<std::string>& contentFiles,
-            const VFS::Manager* vfs, const ToUTF8::StatelessUtf8Encoder* encoder)
-        {
-            std::map<std::string, int> fileToIndex;
-            for (std::size_t i = 0; i < contentFiles.size(); ++i)
-            {
-                const std::string lower = Misc::StringUtils::lowerCase(contentFiles[i]);
-                fileToIndex[lower] = static_cast<int>(i);
-                fileToIndex[Misc::StringUtils::lowerCase(std::filesystem::path(contentFiles[i]).filename().string())]
-                    = static_cast<int>(i);
-            }
-
-            for (std::size_t i = 0; i < contentFiles.size(); ++i)
-            {
-                const std::filesystem::path path = fileCollections.getPath(contentFiles[i]);
-                Log(Debug::Info) << "Loading FO3 content file: " << path;
-                ESM4::Reader reader(
-                    Files::openConstrainedFileStream(path), path, vfs, encoder, true);
-                reader.setModIndex(static_cast<std::uint32_t>(i));
-                reader.updateModIndices(fileToIndex);
-
-                ESM4::ReaderUtils::readAll(
-                    reader,
-                    [&](ESM4::Reader& activeReader) { return handleRecord(activeReader); },
-                    [](ESM4::Reader&) {});
-            }
-
-            rebuildDerivedIndices();
-        }
-
-        std::optional<BootstrapCell> chooseBootstrapCell() const
-        {
-            std::optional<BootstrapCell> bestCell;
-            int bestScore = std::numeric_limits<int>::min();
-
-            for (const auto& [cellId, cell] : mCells)
-            {
-                if (!cell.isExterior() || !hasLand(cell.mParent, cell.mX, cell.mY))
-                    continue;
-
-                if (const auto* refs = getReferences(cellId); refs != nullptr)
-                {
-                    int interactiveScore = 0;
-                    int renderableRefs = 0;
-                    int doorCount = 0;
-                    int containerCount = 0;
-                    int terminalCount = 0;
-                    int settlementRefBonus = 0;
-                    for (const auto& [refId, ref] : *refs)
-                    {
-                        (void)refId;
-                        const BaseRecordData* base = findBase(ref.mBaseObj);
-                        if (base == nullptr)
-                            continue;
-
-                        interactiveScore += bootstrapScoreForKind(base->mKind);
-                        settlementRefBonus += settlementBootstrapBonus(*base, ref);
-                        if (!base->mModel.empty())
-                            ++renderableRefs;
-                        if (base->mKind == ObjectKind::Door)
-                            ++doorCount;
-                        else if (base->mKind == ObjectKind::Container)
-                            ++containerCount;
-                        else if (base->mKind == ObjectKind::Terminal)
-                            ++terminalCount;
-                    }
-
-                    if (interactiveScore == 0 && renderableRefs == 0)
-                        continue;
-
-                    const int settlementBonus = settlementBootstrapBonus(cell);
-                    const int totalScore = settlementBonus + settlementRefBonus + interactiveScore * 8
-                        + renderableRefs * 3 + doorCount * 160 + containerCount * 48 + terminalCount * 64;
-
-                    if (!bestCell.has_value() || totalScore > bestScore)
-                    {
-                        bestCell = BootstrapCell{ cellId, &cell };
-                        bestScore = totalScore;
-                    }
-                }
-            }
-
-            if (bestCell.has_value())
-                return bestCell;
-
-            for (const auto& [cellId, cell] : mCells)
-            {
-                if (cell.isExterior() && hasLand(cell.mParent, cell.mX, cell.mY))
-                    return BootstrapCell{ cellId, &cell };
-            }
-
-            return std::nullopt;
-        }
-
-        const BaseRecordData* findBase(ESM::FormId id) const
-        {
-            const auto it = mBaseRecords.find(id);
-            return it == mBaseRecords.end() ? nullptr : &it->second;
-        }
-
-        const ESM4::LevelledItem* findLevelledItem(ESM::FormId id) const
-        {
-            const auto it = mLevelledItems.find(id);
-            return it == mLevelledItems.end() ? nullptr : &it->second;
-        }
-
-        const ESM4::FormIdList* findFormList(ESM::FormId id) const
-        {
-            const auto it = mFormLists.find(id);
-            return it == mFormLists.end() ? nullptr : &it->second;
-        }
-
-        const ESM4::Land* findLand(ESM::RefId worldspace, int x, int y) const
-        {
-            const auto it = mLandByCell.find(std::make_tuple(worldspace, x, y));
-            if (it == mLandByCell.end())
-                return nullptr;
-
-            const auto landIt = mLands.find(it->second);
-            return landIt == mLands.end() ? nullptr : &landIt->second;
-        }
-
-        bool hasLand(ESM::RefId worldspace, int x, int y) const
-        {
-            return mLandByCell.find(std::make_tuple(worldspace, x, y)) != mLandByCell.end();
-        }
-
-        const std::map<ESM::FormId, ESM4::Reference>* getReferences(ESM::RefId cellId) const
-        {
-            const auto it = mReferencesByCell.find(cellId);
-            return it == mReferencesByCell.end() ? nullptr : &it->second;
-        }
-
-        const ESM4::Reference* findReference(ESM::FormId id) const
-        {
-            const auto it = mReferenceById.find(id);
-            return it == mReferenceById.end() ? nullptr : it->second;
-        }
-
-        const ESM4::LandTexture* findLandTexture(ESM::FormId id) const
-        {
-            const auto it = mLandTextures.find(id);
-            return it == mLandTextures.end() ? nullptr : &it->second;
-        }
-
-        const ESM4::Cell* findCell(ESM::RefId id) const
-        {
-            const auto it = mCells.find(id);
-            return it == mCells.end() ? nullptr : &it->second;
-        }
-
-        std::optional<ESM::RefId> findExteriorCellId(ESM::RefId worldspace, int x, int y) const
-        {
-            const auto it = mExteriorCellByCoord.find(std::make_tuple(worldspace, x, y));
-            if (it == mExteriorCellByCoord.end())
-                return std::nullopt;
-            return it->second;
-        }
-
-        const std::vector<const ESM4::Reference*>* getExteriorSpatialReferences(const ExteriorBucketKey& key) const
-        {
-            const auto it = mExteriorRefsBySpatialCell.find(key);
-            return it == mExteriorRefsBySpatialCell.end() ? nullptr : &it->second;
-        }
-
-        const ESM4::TextureSet* findTextureSet(ESM::FormId id) const
-        {
-            const auto it = mTextureSets.find(id);
-            return it == mTextureSets.end() ? nullptr : &it->second;
-        }
-
-        const WorldBounds* getWorldBounds(ESM::RefId worldspace) const
-        {
-            const auto it = mWorldBounds.find(worldspace);
-            return it == mWorldBounds.end() ? nullptr : &it->second;
-        }
-
-    private:
-        std::map<ESM::FormId, BaseRecordData> mBaseRecords;
-        std::map<ESM::FormId, ESM4::LevelledItem> mLevelledItems;
-        std::map<ESM::FormId, ESM4::FormIdList> mFormLists;
-        std::map<ESM::RefId, ESM4::Cell> mCells;
-        std::map<ESM::FormId, ESM4::World> mWorlds;
-        std::map<ESM::FormId, ESM4::Land> mLands;
-        std::map<ESM::FormId, ESM4::LandTexture> mLandTextures;
-        std::map<ESM::FormId, ESM4::TextureSet> mTextureSets;
-        std::map<ESM::RefId, std::map<ESM::FormId, ESM4::Reference>> mReferencesByCell;
-
-        std::map<std::tuple<ESM::RefId, int, int>, ESM::FormId> mLandByCell;
-        std::map<ESM::FormId, const ESM4::Reference*> mReferenceById;
-        std::map<ESM::RefId, WorldBounds> mWorldBounds;
-        std::map<std::tuple<ESM::RefId, int, int>, ESM::RefId> mExteriorCellByCoord;
-        std::map<ExteriorBucketKey, std::vector<const ESM4::Reference*>> mExteriorRefsBySpatialCell;
-
-        bool handleRecord(ESM4::Reader& reader)
-        {
-            if ((reader.hdr().record.flags & ESM::FLAG_Ignored) != 0)
-                return false;
-
-            reader.getRecordData();
-
-            switch (reader.hdr().record.typeId)
-            {
-                case ESM4::REC_WRLD:
-                {
-                    ESM4::World record;
-                    record.load(reader);
-                    mWorlds[record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_CELL:
-                {
-                    ESM4::Cell record;
-                    record.load(reader);
-                    mCells[record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_LAND:
-                {
-                    ESM4::Land record;
-                    record.load(reader);
-                    mLands[record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_LTEX:
-                {
-                    ESM4::LandTexture record;
-                    record.load(reader);
-                    mLandTextures[record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_TXST:
-                {
-                    ESM4::TextureSet record;
-                    record.load(reader);
-                    mTextureSets[record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_REFR:
-                {
-                    ESM4::Reference record;
-                    record.load(reader);
-                    mReferencesByCell[record.mParent][record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_STAT:
-                {
-                    ESM4::Static record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Static,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mCategory = std::string(toString(ObjectKind::Static)) };
-                    return true;
-                }
-                case ESM4::REC_MSTT:
-                {
-                    ESM4::MovableStatic record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::MovableStatic,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mCategory = std::string(toString(ObjectKind::MovableStatic)) };
-                    return true;
-                }
-                case ESM4::REC_DOOR:
-                {
-                    ESM4::Door record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Door,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mCategory = std::string(toString(ObjectKind::Door)) };
-                    return true;
-                }
-                case ESM4::REC_CONT:
-                {
-                    ESM4::Container record;
-                    record.load(reader);
-                    int itemCount = 0;
-                    for (const auto& item : record.mInventory)
-                        itemCount += static_cast<int>(item.count);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Container,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mCategory = std::string(toString(ObjectKind::Container)),
-                        .mItemCount = itemCount,
-                        .mContainerItems = record.mInventory };
-                    return true;
-                }
-                case ESM4::REC_ACTI:
-                {
-                    ESM4::Activator record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Activator,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mCategory = std::string(toString(ObjectKind::Activator)),
-                        .mText = record.mActivationPrompt };
-                    return true;
-                }
-                case ESM4::REC_TERM:
-                {
-                    ESM4::Terminal record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Terminal,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mCategory = std::string(toString(ObjectKind::Terminal)),
-                        .mText = record.mText,
-                        .mResultText = record.mResultText };
-                    return true;
-                }
-                case ESM4::REC_BOOK:
-                {
-                    ESM4::Book record;
-                    record.load(reader);
-                    const std::string title = !record.mFullName.empty() ? record.mFullName : record.mEditorId;
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Book,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mText = preferredBookText(title, record),
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Book)),
-                        .mValue = static_cast<int>(record.mData.value),
-                        .mWeight = record.mData.weight,
-                        .mReadable = true,
-                        .mNoTake = (record.mData.flags & ESM4::Book::Flag_NoTake) != 0 };
-                    return true;
-                }
-                case ESM4::REC_NOTE:
-                {
-                    ESM4::Note record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Note,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mText = record.mText,
-                        .mCategory = std::string(toString(ObjectKind::Note)),
-                        .mReadable = true };
-                    return true;
-                }
-                case ESM4::REC_MISC:
-                {
-                    ESM4::MiscItem record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Misc,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Misc)),
-                        .mValue = static_cast<int>(record.mData.value),
-                        .mWeight = record.mData.weight };
-                    return true;
-                }
-                case ESM4::REC_ALCH:
-                {
-                    ESM4::Potion record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Aid,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Aid)),
-                        .mValue = static_cast<int>(record.mItem.value),
-                        .mWeight = record.mData.weight };
-                    return true;
-                }
-                case ESM4::REC_AMMO:
-                {
-                    ESM4::Ammunition record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Ammo,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName.empty() ? record.mShortName : record.mFullName,
-                        .mModel = record.mModel,
-                        .mText = record.mText,
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Ammo)),
-                        .mValue = static_cast<int>(record.mData.mValue),
-                        .mWeight = record.mData.mWeight };
-                    return true;
-                }
-                case ESM4::REC_ARMO:
-                {
-                    ESM4::Armor record;
-                    record.load(reader);
-                    const std::string& model = !record.mModel.empty() ? record.mModel
-                        : (!record.mModelMaleWorld.empty() ? record.mModelMaleWorld
-                                                           : (!record.mModelMale.empty() ? record.mModelMale
-                                                                                         : record.mModelFemaleWorld));
-                    const std::string& icon = !record.mIconMale.empty() ? record.mIconMale : record.mIconFemale;
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Armor,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = model,
-                        .mText = record.mText,
-                        .mIcon = icon,
-                        .mCategory = std::string(toString(ObjectKind::Armor)),
-                        .mValue = static_cast<int>(record.mData.value),
-                        .mWeight = record.mData.weight };
-                    return true;
-                }
-                case ESM4::REC_KEYM:
-                {
-                    ESM4::Key record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Key,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Key)),
-                        .mValue = static_cast<int>(record.mData.value),
-                        .mWeight = record.mData.weight };
-                    return true;
-                }
-                case ESM4::REC_LIGH:
-                {
-                    ESM4::Light record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Light,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Light)),
-                        .mValue = static_cast<int>(record.mData.value),
-                        .mWeight = record.mData.weight };
-                    return true;
-                }
-                case ESM4::REC_WEAP:
-                {
-                    ESM4::Weapon record;
-                    record.load(reader);
-                    mBaseRecords[record.mId] = BaseRecordData{ .mKind = ObjectKind::Weapon,
-                        .mEditorId = record.mEditorId,
-                        .mFullName = record.mFullName,
-                        .mModel = record.mModel,
-                        .mText = record.mText,
-                        .mIcon = record.mIcon,
-                        .mCategory = std::string(toString(ObjectKind::Weapon)),
-                        .mValue = static_cast<int>(record.mData.value),
-                        .mWeight = record.mData.weight };
-                    return true;
-                }
-                case ESM4::REC_LVLI:
-                {
-                    ESM4::LevelledItem record;
-                    record.load(reader);
-                    mLevelledItems[record.mId] = std::move(record);
-                    return true;
-                }
-                case ESM4::REC_FLST:
-                {
-                    ESM4::FormIdList record;
-                    record.load(reader);
-                    mFormLists[record.mId] = std::move(record);
-                    return true;
-                }
-                default:
-                    return false;
-            }
-        }
-
-        void rebuildDerivedIndices()
-        {
-            mLandByCell.clear();
-            mReferenceById.clear();
-            mWorldBounds.clear();
-            mExteriorCellByCoord.clear();
-            mExteriorRefsBySpatialCell.clear();
-
-            for (const auto& [cellId, cell] : mCells)
-            {
-                if (!cell.isExterior())
-                    continue;
-
-                mExteriorCellByCoord[std::make_tuple(cell.mParent, cell.mX, cell.mY)] = cellId;
-            }
-
-            for (const auto& [cellId, refs] : mReferencesByCell)
-            {
-                for (const auto& [refId, ref] : refs)
-                {
-                    (void)refId;
-                    mReferenceById[ref.mId] = &ref;
-                }
-            }
-
-            for (const auto& [landId, land] : mLands)
-            {
-                const ESM::RefId cellId = ESM::RefId::formIdRefId(land.mCell);
-                const auto cellIt = mCells.find(cellId);
-                if (cellIt == mCells.end() || !cellIt->second.isExterior())
-                    continue;
-
-                const ESM4::Cell& cell = cellIt->second;
-                mLandByCell[std::make_tuple(cell.mParent, cell.mX, cell.mY)] = landId;
-                mWorldBounds[cell.mParent].include(static_cast<float>(cell.mX), static_cast<float>(cell.mY));
-            }
-
-            std::size_t rebucketedRefs = 0;
-            std::size_t farRebucketedRefs = 0;
-            std::size_t loggedFarRebucketedRefs = 0;
-            for (const auto& [cellId, refs] : mReferencesByCell)
-            {
-                const auto cellIt = mCells.find(cellId);
-                if (cellIt == mCells.end() || !cellIt->second.isExterior())
-                    continue;
-
-                const ESM4::Cell& cell = cellIt->second;
-                const ESM::RefId worldspace = cell.mParent;
-                for (const auto& [refId, ref] : refs)
-                {
-                    (void)refId;
-                    const ESM::ExteriorCellLocation spatialCell
-                        = ESM::positionToExteriorCellLocation(ref.mPos.pos[0], ref.mPos.pos[1], worldspace);
-                    const ExteriorBucketKey bucketKey = makeExteriorBucketKey(worldspace, spatialCell.mX, spatialCell.mY);
-                    mExteriorRefsBySpatialCell[bucketKey].push_back(&ref);
-
-                    const int dx = std::abs(spatialCell.mX - cell.mX);
-                    const int dy = std::abs(spatialCell.mY - cell.mY);
-                    if (dx == 0 && dy == 0)
-                        continue;
-
-                    ++rebucketedRefs;
-                    if (std::max(dx, dy) <= 1)
-                        continue;
-
-                    ++farRebucketedRefs;
-                    if (loggedFarRebucketedRefs < 12)
-                    {
-                        Log(Debug::Info) << "OpenFO3 spatially re-bucketed ref " << ESM::RefId(ref.mId).serializeText()
-                                         << " from source cell (" << cell.mX << ", " << cell.mY << ") to bucket ("
-                                         << spatialCell.mX << ", " << spatialCell.mY << ")";
-                        ++loggedFarRebucketedRefs;
-                    }
-                }
-            }
-
-            if (rebucketedRefs > 0)
-            {
-                Log(Debug::Info) << "OpenFO3 spatially re-bucketed " << rebucketedRefs
-                                 << " exterior refs by world position; far-outlier refs=" << farRebucketedRefs;
-            }
-        }
-    };
 
     class Fo3TerrainStorage final : public ESMTerrain::Storage
     {
@@ -2125,6 +1230,7 @@ struct OpenFO3::Engine::Impl
     {
         mContent = std::make_unique<LoadedContent>();
         mContent->load(mFileCollections, mContentFiles, mVFS.get(), &mEncoder->getStatelessEncoder());
+        mPlayerState = seedPrototypePlayerState(*mContent);
     }
 
     void createExteriorSceneSystems()
@@ -3362,12 +2468,7 @@ struct OpenFO3::Engine::Impl
         if (!isLockedForSession(metadata) || isKeyOnlyLock(metadata))
             return false;
 
-        const int required = requiredAccessSkill(metadata);
-        if (metadata.mKind == ObjectKind::Terminal)
-            return mPlayerCapabilities.mScience >= required;
-        if (metadata.mKind == ObjectKind::Door || metadata.mKind == ObjectKind::Container)
-            return mPlayerCapabilities.mLockpick >= required;
-        return false;
+        return OpenFO3::canAccessWithSkill(mPlayerState, metadata.mKind, requiredAccessSkill(metadata));
     }
 
     [[nodiscard]] std::string describeKeyRequirement(ESM::FormId keyForm) const
@@ -3424,9 +2525,9 @@ struct OpenFO3::Engine::Impl
         stream << (metadata.mKind == ObjectKind::Terminal ? "Terminal Locked" : "Locked") << "\n";
         stream << describeAccessRequirement(metadata);
         if (metadata.mKind == ObjectKind::Terminal)
-            stream << "\nScience: " << mPlayerCapabilities.mScience;
+            stream << "\nScience: " << mPlayerState.currentSkills[Fo3Skill::Science];
         else
-            stream << "\nLockpick: " << mPlayerCapabilities.mLockpick;
+            stream << "\nLockpick: " << mPlayerState.currentSkills[Fo3Skill::Lockpick];
 
         stream << "\n\n";
         for (int i = 0; i < static_cast<int>(actions.size()); ++i)
@@ -4152,6 +3253,238 @@ struct OpenFO3::Engine::Impl
         return "No readable text was parsed for this record.";
     }
 
+    std::string buildStatusBody() const
+    {
+        std::ostringstream stream;
+        stream << "Level " << mPlayerState.progression.level << "  XP " << mPlayerState.progression.experience;
+        if (mPlayerState.progression.level < mPlayerState.progression.levelCap)
+            stream << " / " << mPlayerState.progression.experienceForNextLevel;
+        else
+            stream << " / cap";
+
+        stream << "\nSkill points: " << mPlayerState.progression.unspentSkillPoints;
+        stream << "\nPerks: " << mPlayerState.progression.unspentPerks;
+
+        stream << "\n\nSPECIAL";
+        stream << "\nSTR " << mPlayerState.effectiveSpecial.strength;
+        stream << "\nPER " << mPlayerState.effectiveSpecial.perception;
+        stream << "\nEND " << mPlayerState.effectiveSpecial.endurance;
+        stream << "\nCHA " << mPlayerState.effectiveSpecial.charisma;
+        stream << "\nINT " << mPlayerState.effectiveSpecial.intelligence;
+        stream << "\nAGI " << mPlayerState.effectiveSpecial.agility;
+        stream << "\nLCK " << mPlayerState.effectiveSpecial.luck;
+
+        stream << "\n\nSkills";
+        for (Fo3Skill skill : OpenFO3::sAllFo3Skills)
+            stream << "\n" << toString(skill) << ": " << mPlayerState.currentSkills[skill];
+
+        stream << "\n\nVitals";
+        stream << "\nHP: " << mPlayerState.derived.hitPoints;
+        stream << "\nAP: " << mPlayerState.derived.actionPoints;
+        stream << "\nCarry Weight: " << mPlayerState.derived.carryWeight;
+        stream << "\nRadiation: " << mPlayerState.radiation;
+        stream << "\nRad Resistance: " << mPlayerState.derived.radiationResistance;
+        stream << "\nSkill Points/Level: " << mPlayerState.derived.skillPointsPerLevel;
+
+        stream << "\n\nPerks";
+        if (mPlayerState.chosenPerks.empty())
+            stream << "\nNone";
+        else
+        {
+            for (const ChosenPerk& perk : mPlayerState.chosenPerks)
+            {
+                stream << "\n" << perk.name;
+                if (perk.rank > 1)
+                    stream << " x" << perk.rank;
+            }
+        }
+
+        return stream.str();
+    }
+
+    std::vector<const ESM4::Perk*> buildEligiblePerkView() const
+    {
+        if (mContent == nullptr)
+            return {};
+        return getEligiblePerks(mPlayerState, *mContent);
+    }
+
+    std::string buildLevelUpBody()
+    {
+        std::ostringstream stream;
+        if (mLevelUpStage == LevelUpStage::Skills)
+        {
+            clampPanelSelection(static_cast<int>(OpenFO3::sAllFo3Skills.size()));
+            stream << "Level " << mPlayerState.progression.level << "\n";
+            stream << "Unspent skill points: " << mPlayerState.progression.unspentSkillPoints;
+            stream << "\nUnspent perks: " << mPlayerState.progression.unspentPerks;
+            stream << "\n\n";
+
+            const int end = std::min<int>(
+                static_cast<int>(OpenFO3::sAllFo3Skills.size()), mPanelScrollOffset + sPanelListVisibleItems);
+            for (int i = mPanelScrollOffset; i < end; ++i)
+            {
+                const Fo3Skill skill = OpenFO3::sAllFo3Skills[static_cast<std::size_t>(i)];
+                stream << (i == mPanelSelectionIndex ? "> " : "  ");
+                stream << toString(skill) << ": " << mPlayerState.currentSkills[skill];
+                if (i + 1 < end)
+                    stream << '\n';
+            }
+            return stream.str();
+        }
+
+        const std::vector<const ESM4::Perk*> perks = buildEligiblePerkView();
+        clampPanelSelection(static_cast<int>(perks.size()));
+
+        stream << "Level " << mPlayerState.progression.level << "\n";
+        stream << "Available perk picks: " << mPlayerState.progression.unspentPerks << "\n\n";
+
+        if (perks.empty())
+        {
+            stream << "No perks are currently eligible for the shell.";
+            return stream.str();
+        }
+
+        const int end = std::min<int>(static_cast<int>(perks.size()), mPanelScrollOffset + sPanelListVisibleItems);
+        for (int i = mPanelScrollOffset; i < end; ++i)
+        {
+            const ESM4::Perk& perk = *perks[static_cast<std::size_t>(i)];
+            stream << (i == mPanelSelectionIndex ? "> " : "  ");
+            stream << (!perk.mFullName.empty() ? perk.mFullName : perk.mEditorId);
+            if (i + 1 < end)
+                stream << '\n';
+        }
+
+        const ESM4::Perk& selected = *perks[static_cast<std::size_t>(mPanelSelectionIndex)];
+        if (!selected.mDescription.empty())
+            stream << "\n\n" << selected.mDescription;
+        else if (!selected.mEditorId.empty())
+            stream << "\n\n" << selected.mEditorId;
+        return stream.str();
+    }
+
+    void openStatusPanel()
+    {
+        clearMovementState();
+        if (mGrabMouse)
+            applyMouseMode(false);
+        mPanelMode = PanelMode::Status;
+        mPanelTitle = "Status";
+        mPanelTextLines = splitPanelLines(buildStatusBody());
+        mPanelTargetReferenceId = {};
+        mPanelSelectionIndex = 0;
+        mPanelScrollOffset = 0;
+        refreshActivePanel();
+    }
+
+    void openLevelUpPanel()
+    {
+        if (mPlayerState.progression.unspentSkillPoints <= 0 && mPlayerState.progression.unspentPerks <= 0)
+            return;
+
+        clearMovementState();
+        if (mGrabMouse)
+            applyMouseMode(false);
+        mPanelMode = PanelMode::LevelUp;
+        mPanelTitle = "Level Up";
+        mPanelTargetReferenceId = {};
+        mPanelTextLines.clear();
+        mPanelSelectionIndex = 0;
+        mPanelScrollOffset = 0;
+        mLevelUpStage = mPlayerState.progression.unspentSkillPoints > 0 ? LevelUpStage::Skills : LevelUpStage::Perks;
+        refreshActivePanel();
+    }
+
+    void toggleStatusPanel()
+    {
+        if (mPanelOpen && mPanelMode == PanelMode::Status)
+        {
+            closePanel();
+            return;
+        }
+
+        openStatusPanel();
+    }
+
+    void toggleLevelUpStage()
+    {
+        if (mPanelMode != PanelMode::LevelUp)
+            return;
+
+        if (mLevelUpStage == LevelUpStage::Skills && mPlayerState.progression.unspentPerks > 0)
+            mLevelUpStage = LevelUpStage::Perks;
+        else if (mLevelUpStage == LevelUpStage::Perks && mPlayerState.progression.unspentSkillPoints > 0)
+            mLevelUpStage = LevelUpStage::Skills;
+        else
+            return;
+
+        mPanelSelectionIndex = 0;
+        mPanelScrollOffset = 0;
+        refreshActivePanel();
+    }
+
+    void grantDebugExperience()
+    {
+        if (mContent == nullptr)
+            return;
+        grantExperience(mPlayerState, *mContent, 500);
+        updateStatusText();
+        refreshActivePanel();
+    }
+
+    void applyInventoryStackBonuses(const InventoryStack& stack, std::string_view sourcePrefix)
+    {
+        if (mContent == nullptr || stack.mCount <= 0)
+            return;
+
+        for (int i = 0; i < stack.mCount; ++i)
+        {
+            std::ostringstream source;
+            source << sourcePrefix << "#" << i;
+            if (applyReadableBonus(mPlayerState, stack.mEditorId, stack.mName, source.str()).has_value())
+                recomputePlayerState(mPlayerState, *mContent);
+        }
+        updateStatusText();
+    }
+
+    void executeLevelUpSelection()
+    {
+        if (mContent == nullptr)
+            return;
+
+        if (mLevelUpStage == LevelUpStage::Skills)
+        {
+            clampPanelSelection(static_cast<int>(OpenFO3::sAllFo3Skills.size()));
+            const Fo3Skill skill = OpenFO3::sAllFo3Skills[static_cast<std::size_t>(mPanelSelectionIndex)];
+            if (spendSkillPoint(mPlayerState, *mContent, skill))
+            {
+                if (mPlayerState.progression.unspentSkillPoints <= 0 && mPlayerState.progression.unspentPerks > 0)
+                {
+                    mLevelUpStage = LevelUpStage::Perks;
+                    mPanelSelectionIndex = 0;
+                    mPanelScrollOffset = 0;
+                }
+                updateStatusText();
+                refreshActivePanel();
+            }
+            return;
+        }
+
+        const std::vector<const ESM4::Perk*> perks = buildEligiblePerkView();
+        clampPanelSelection(static_cast<int>(perks.size()));
+        if (perks.empty())
+            return;
+
+        if (selectPerk(mPlayerState, *mContent, *perks[static_cast<std::size_t>(mPanelSelectionIndex)]))
+        {
+            updateStatusText();
+            if (mPlayerState.progression.unspentPerks <= 0)
+                openStatusPanel();
+            else
+                refreshActivePanel();
+        }
+    }
+
     void refreshActivePanel()
     {
         if (mPanelMode == PanelMode::None)
@@ -4186,6 +3519,18 @@ struct OpenFO3::Engine::Impl
                 clampTextScroll();
                 body = buildVisibleTextBody();
                 footer = "[W/S or Up/Down] scroll   [I] inventory   [Esc] close";
+                break;
+            case PanelMode::Status:
+                mPanelTextLines = splitPanelLines(buildStatusBody());
+                clampTextScroll();
+                body = buildVisibleTextBody();
+                footer = "[W/S or Up/Down] scroll   [G] grant XP   [L] level up   [Tab/Esc] close";
+                break;
+            case PanelMode::LevelUp:
+                body = buildLevelUpBody();
+                footer = mLevelUpStage == LevelUpStage::Skills
+                    ? "[W/S or Up/Down] select   [E/Enter] spend   [L] perks   [Tab/Esc] close"
+                    : "[W/S or Up/Down] select   [E/Enter] choose   [L] skills   [Tab/Esc] close";
                 break;
             case PanelMode::Inventory:
                 body = buildInventoryBody(buildInventoryView());
@@ -4274,9 +3619,12 @@ struct OpenFO3::Engine::Impl
         refreshActivePanel();
     }
 
-    void openReadPanel(const InventoryStack& stack)
+    void openReadPanel(const InventoryStack& stack, std::string_view bonusMessage = {})
     {
-        openTextPanel(PanelMode::Read, stack.mName, buildReadableText(stack));
+        std::string body = buildReadableText(stack);
+        if (!bonusMessage.empty())
+            body = std::string(bonusMessage) + "\n\n" + body;
+        openTextPanel(PanelMode::Read, stack.mName, body);
     }
 
     void toggleInventoryPanel()
@@ -4300,11 +3648,13 @@ struct OpenFO3::Engine::Impl
             case PanelMode::Container:
             case PanelMode::Inventory:
             case PanelMode::Access:
+            case PanelMode::LevelUp:
                 mPanelSelectionIndex += delta;
                 break;
             case PanelMode::Info:
             case PanelMode::Terminal:
             case PanelMode::Read:
+            case PanelMode::Status:
                 mPanelScrollOffset += delta;
                 break;
             case PanelMode::None:
@@ -4405,6 +3755,10 @@ struct OpenFO3::Engine::Impl
             return;
 
         addToInventory(*it);
+        std::ostringstream bonusSource;
+        bonusSource << "container:" << ESM::RefId::formIdRefId(metadata->mReferenceId).serializeText() << ":"
+                    << ESM::RefId::formIdRefId(it->mBaseId).serializeText();
+        applyInventoryStackBonuses(*it, bonusSource.str());
         contents.erase(it);
         metadata->mItemCount = totalItemCount(contents);
         refreshActivePanel();
@@ -4424,7 +3778,13 @@ struct OpenFO3::Engine::Impl
             if (stack.mNoTake)
                 remaining.push_back(stack);
             else
+            {
                 addToInventory(stack);
+                std::ostringstream bonusSource;
+                bonusSource << "container:" << ESM::RefId::formIdRefId(metadata->mReferenceId).serializeText() << ":"
+                            << ESM::RefId::formIdRefId(stack.mBaseId).serializeText();
+                applyInventoryStackBonuses(stack, bonusSource.str());
+            }
         }
         contents = std::move(remaining);
         metadata->mItemCount = 0;
@@ -4470,11 +3830,25 @@ struct OpenFO3::Engine::Impl
     {
         switch (key)
         {
+            case SDLK_TAB:
             case SDLK_ESCAPE:
-                closePanel();
+                if (mPanelMode == PanelMode::LevelUp)
+                    openStatusPanel();
+                else
+                    closePanel();
                 break;
             case SDLK_i:
                 toggleInventoryPanel();
+                break;
+            case SDLK_g:
+                if (mPanelMode == PanelMode::Status)
+                    grantDebugExperience();
+                break;
+            case SDLK_l:
+                if (mPanelMode == PanelMode::Status)
+                    openLevelUpPanel();
+                else if (mPanelMode == PanelMode::LevelUp)
+                    toggleLevelUpStage();
                 break;
             case SDLK_UP:
             case SDLK_w:
@@ -4508,9 +3882,13 @@ struct OpenFO3::Engine::Impl
                     case PanelMode::Inventory:
                         inspectSelectedInventoryEntry();
                         break;
+                    case PanelMode::LevelUp:
+                        executeLevelUpSelection();
+                        break;
                     case PanelMode::Info:
                     case PanelMode::Terminal:
                     case PanelMode::Read:
+                    case PanelMode::Status:
                         closePanel();
                         break;
                     case PanelMode::None:
@@ -4563,6 +3941,10 @@ struct OpenFO3::Engine::Impl
             case SDLK_i:
                 if (pressed)
                     toggleInventoryPanel();
+                break;
+            case SDLK_TAB:
+                if (pressed)
+                    toggleStatusPanel();
                 break;
             case SDLK_c:
                 if (pressed)
@@ -5303,16 +4685,27 @@ struct OpenFO3::Engine::Impl
 
         const InventoryStack stack = buildInventoryStackForWorldObject(metadata, 1);
         addToInventory(stack);
+        std::optional<std::string> bonusMessage;
+        if (mContent != nullptr)
+        {
+            bonusMessage = applyReadableBonus(mPlayerState, stack.mEditorId, stack.mName,
+                "ref:" + ESM::RefId::formIdRefId(metadata.mReferenceId).serializeText());
+            if (bonusMessage.has_value())
+                recomputePlayerState(mPlayerState, *mContent);
+            updateStatusText();
+        }
 
         if (readable && stack.mReadable)
         {
-            openReadPanel(stack);
+            openReadPanel(stack, bonusMessage.value_or(""));
             return;
         }
 
         std::ostringstream stream;
         stream << metadata.mName << "\n\nPicked up into the local OpenFO3 prototype inventory."
                << "\nInventory items: " << inventoryItemCount();
+        if (bonusMessage.has_value())
+            stream << "\nBonus applied: " << *bonusMessage;
         openTextPanel(PanelMode::Info, "Inventory", stream.str());
     }
 
@@ -5352,8 +4745,11 @@ struct OpenFO3::Engine::Impl
                << "Move: WASD  Look: mouse";
         if (!mGrabMouse)
             stream << " / hold RMB";
-        stream << "\nUp/Down: Space/Ctrl  Toggle collision: C  Interact: E  Inventory: I\n"
-               << "Inventory: " << inventoryItemCount();
+        stream << "\nUp/Down: Space/Ctrl  Toggle collision: C  Interact: E  Inventory: I  Status: Tab\n"
+               << "Level: " << mPlayerState.progression.level
+               << "  Lockpick: " << mPlayerState.currentSkills[Fo3Skill::Lockpick]
+               << "  Science: " << mPlayerState.currentSkills[Fo3Skill::Science]
+               << "  Inventory: " << inventoryItemCount();
         mStatusText->setText(stream.str());
     }
 
@@ -5457,7 +4853,8 @@ struct OpenFO3::Engine::Impl
     std::unordered_set<ESM::FormId> mPickedUpReferenceIds;
     std::unordered_set<ESM::FormId> mUnlockedReferenceIds;
     std::unordered_map<ESM::FormId, InventoryStack> mInventory;
-    PlayerCapabilities mPlayerCapabilities;
+    PlayerState mPlayerState;
+    LevelUpStage mLevelUpStage = LevelUpStage::Skills;
 
     ESM::RefId mWorldspace;
     ESM::RefId mActiveCell;

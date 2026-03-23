@@ -1,0 +1,59 @@
+[10:40:51.338 *] Crash handler installed
+[10:40:51.340 *] Loading config file: /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/openmw.cfg
+[10:40:51.342 *] Loading config file: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Preferences/openmw/openmw.cfg
+[10:40:51.342 *] Logs dir: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Preferences/openmw/
+[10:40:51.342 *] User data dir: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Application Support/openmw/
+[10:40:51.342 *] Screenshots dir: /Users/jacobcyber/Documents/openfo3/.codex/openfo3-playtest/runtime-home/Library/Application Support/openmw/screenshots
+[10:40:51.342 I] OpenFO3 prototype
+[10:40:51.342 I] OpenMW version 0.51.0
+[10:40:51.342 I] Revision: cf849f34d1
+[10:40:51.343 I] Loading settings file: /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/defaults.bin
+[10:40:51.345 I] Using default (English) font encoding.
+[10:40:51.345 I] Using OpenFO3 resource data directory /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/resources/vfs
+[10:40:51.705 I] OpenFO3 GL extensions ready=1
+[10:40:51.706 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Meshes.bsa
+[10:40:51.712 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Textures.bsa
+[10:40:51.719 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Voices.bsa
+[10:40:51.751 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Sound.bsa
+[10:40:51.753 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - Misc.bsa
+[10:40:51.754 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout - MenuVoices.bsa
+[10:40:51.779 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Anchorage - Main.bsa
+[10:40:51.783 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Anchorage - Sounds.bsa
+[10:40:51.784 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/ThePitt - Main.bsa
+[10:40:51.790 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/ThePitt - Sounds.bsa
+[10:40:51.790 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/BrokenSteel - Main.bsa
+[10:40:51.795 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/BrokenSteel - Sounds.bsa
+[10:40:51.796 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/PointLookout - Main.bsa
+[10:40:51.800 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/PointLookout - Sounds.bsa
+[10:40:51.801 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Zeta - Main.bsa
+[10:40:51.804 I] Adding BSA archive /Users/jacobcyber/Documents/openfo3/game_files/Data/Zeta - Sounds.bsa
+[10:40:51.804 I] Adding data directory /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/resources/vfs
+[10:40:51.807 I] Adding data directory /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/../Resources/resources/vfs-mw
+[10:40:51.807 I] Adding data directory /Users/jacobcyber/Documents/openfo3/game_files/Data
+[10:40:51.856 I] OpenFO3 shader bootstrap: lightingMethod=0 useUBO=0 shadows_enabled=0
+[10:40:51.856 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/Fallout3.esm
+[10:40:53.357 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/Anchorage.esm
+[10:40:53.450 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/ThePitt.esm
+[10:40:53.500 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/BrokenSteel.esm
+[10:40:53.554 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/PointLookout.esm
+[10:40:53.648 I] Loading FO3 content file: /Users/jacobcyber/Documents/openfo3/game_files/Data/Zeta.esm
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x1000926 from source cell (0, 0) to bucket (9, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x1000963 from source cell (0, 0) to bucket (7, -11)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x100099a from source cell (0, 0) to bucket (10, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x100099b from source cell (0, 0) to bucket (9, -6)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x100099d from source cell (0, 0) to bucket (9, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009a0 from source cell (0, 0) to bucket (10, -6)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009a2 from source cell (0, 0) to bucket (10, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009a3 from source cell (0, 0) to bucket (9, -6)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009ad from source cell (0, 0) to bucket (9, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009ae from source cell (0, 0) to bucket (9, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009af from source cell (0, 0) to bucket (9, -7)
+[10:40:53.959 I] OpenFO3 spatially re-bucketed ref FormId:0x10009b3 from source cell (0, 0) to bucket (10, -7)
+[10:40:54.022 I] OpenFO3 spatially re-bucketed 8680 exterior refs by world position; far-outlier refs=7847
+[10:40:54.161 I] OpenFO3 bootstrap cell FormId:0x2dbb worldspace FormId:0xa74 coords=(-1, -7)
+[10:40:54.161 I] OpenFO3 streaming config: viewingDistance=7168 requestedTerrainHalfGridSize=2 requestedLocalTerrainHalfGridSize=2 terrainHalfGridSize=2 farVisualHalfGridSize=2 nearFullHalfGridSize=2 interactionHalfGridSize=1 landmarkHalfGridSize=2 requestedDistantTerrain=0 distantTerrain=0
+[10:40:54.164 W] LandTexture not found: 0xa8b
+[10:40:54.165 E] Failed to open image: Resource '' not found
+[10:40:54.170 V] Disabling Multiview (disabled by config)
+[10:40:54.170 E] Failed to open shader /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/shaders/compatibility/terrain.vert: No such file or directory
+[10:40:54.170 E] Failed to open shader /Users/jacobcyber/Documents/openfo3/build/openfo3-check-on-luajit/OpenMW.app/Contents/Resources/shaders/compatibility/terrain.frag: No such file or directory

@@ -1,6 +1,7 @@
 #include "nifloader.hpp"
 
 #include <mutex>
+#include <set>
 #include <string_view>
 
 #include <osg/Array>
@@ -64,6 +65,32 @@
 
 namespace
 {
+    void logKnownUnsupportedOnce(std::string key, const std::string& message)
+    {
+        static std::mutex sMutex;
+        static std::set<std::string> sLogged;
+
+        std::lock_guard<std::mutex> lock(sMutex);
+        if (!sLogged.insert(std::move(key)).second)
+            return;
+
+        Log(Debug::Verbose) << message;
+    }
+
+    bool isKnownFo3AmbientController(const Nif::NiTimeController& ctrl)
+    {
+        switch (ctrl.mRecordType)
+        {
+            case Nif::RC_NiControllerManager:
+            case Nif::RC_NiMultiTargetTransformController:
+            case Nif::RC_NiPSysEmitterCtlr:
+            case Nif::RC_NiPSysUpdateCtlr:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     struct DisableOptimizer : osg::NodeVisitor
     {
         DisableOptimizer(osg::NodeVisitor::TraversalMode mode = TRAVERSE_ALL_CHILDREN)
@@ -370,15 +397,37 @@ namespace NifOsg
                 const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(key->mInterpolator.getPtr());
                 if (!key->mInterpolator.empty() && !interpolator)
                 {
-                    Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController " << key->mRecordIndex
-                                      << " in " << mFilename << ": " << key->mInterpolator->mRecordName;
+                    if (key->mInterpolator->mRecordType == Nif::RC_NiPathInterpolator)
+                    {
+                        logKnownUnsupportedOnce(
+                            "NiKeyframeController:NiPathInterpolator",
+                            "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
+                                + std::string(mFilename.value()));
+                    }
+                    else
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
+                                          << key->mRecordIndex << " in " << mFilename << ": "
+                                          << key->mInterpolator->mRecordName;
+                    }
                     continue;
                 }
 
                 if (interpolator && interpolator->mRecordType != Nif::RC_NiTransformInterpolator)
                 {
-                    Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController " << key->mRecordIndex
-                                      << " in " << mFilename << ": " << interpolator->mRecordName;
+                    if (interpolator->mRecordType == Nif::RC_NiPathInterpolator)
+                    {
+                        logKnownUnsupportedOnce(
+                            "NiKeyframeController:NiPathInterpolator",
+                            "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
+                                + std::string(mFilename.value()));
+                    }
+                    else
+                    {
+                        Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
+                                          << key->mRecordIndex << " in " << mFilename << ": "
+                                          << interpolator->mRecordName;
+                    }
                     continue;
                 }
 
@@ -955,16 +1004,36 @@ namespace NifOsg
                     const Nif::NiInterpolator* interpolator = unwrapSimpleBlendInterpolator(key->mInterpolator.getPtr());
                     if (!key->mInterpolator.empty() && !interpolator)
                     {
-                        Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
-                                          << key->mRecordIndex << " in " << mFilename << ": "
-                                          << key->mInterpolator->mRecordName;
+                        if (key->mInterpolator->mRecordType == Nif::RC_NiPathInterpolator)
+                        {
+                            logKnownUnsupportedOnce(
+                                "NiKeyframeController:NiPathInterpolator",
+                                "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
+                                    + std::string(mFilename.value()));
+                        }
+                        else
+                        {
+                            Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
+                                              << key->mRecordIndex << " in " << mFilename << ": "
+                                              << key->mInterpolator->mRecordName;
+                        }
                         continue;
                     }
                     if (interpolator && interpolator->mRecordType != Nif::RC_NiTransformInterpolator)
                     {
-                        Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
-                                          << key->mRecordIndex << " in " << mFilename << ": "
-                                          << interpolator->mRecordName;
+                        if (interpolator->mRecordType == Nif::RC_NiPathInterpolator)
+                        {
+                            logKnownUnsupportedOnce(
+                                "NiKeyframeController:NiPathInterpolator",
+                                "Skipping unsupported NiPathInterpolator on NiKeyframeController in "
+                                    + std::string(mFilename.value()));
+                        }
+                        else
+                        {
+                            Log(Debug::Error) << "Unsupported interpolator type for NiKeyframeController "
+                                              << key->mRecordIndex << " in " << mFilename << ": "
+                                              << interpolator->mRecordName;
+                        }
                         continue;
                     }
                     osg::ref_ptr<KeyframeController> callback = new KeyframeController(key);
@@ -1036,6 +1105,13 @@ namespace NifOsg
                     || ctrl->mRecordType == Nif::RC_NiBSPArrayController || ctrl->mRecordType == Nif::RC_NiUVController)
                 {
                     // These controllers are handled elsewhere
+                }
+                else if (isKnownFo3AmbientController(*ctrl.getPtr()))
+                {
+                    logKnownUnsupportedOnce(
+                        "UnhandledController:" + ctrl->mRecordName,
+                        "Skipping known unsupported controller " + ctrl->mRecordName + " in "
+                            + std::string(mFilename.value()));
                 }
                 else
                     Log(Debug::Info) << "Unhandled controller " << ctrl->mRecordName << " on node "

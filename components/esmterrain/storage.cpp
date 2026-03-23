@@ -413,8 +413,9 @@ namespace ESMTerrain
             auto found = textureIndicesMap.find(texId);
             if (found != textureIndicesMap.end())
                 return blendmaps[found->second]->data();
-            Terrain::LayerInfo info
-                = texId.isZeroOrUnset() ? land->getEsm4DefaultLayerInfo() : getLandTextureLayerInfo(texId);
+            Terrain::LayerInfo info = texId.isZeroOrUnset() ? land->getEsm4DefaultLayerInfo()
+                                                            : getLandTextureLayerInfo(
+                                                                  texId, &land->getEsm4DefaultLayerInfo());
             osg::ref_ptr<osg::Image> image(new osg::Image);
             image->allocateImage(blendmapSize, blendmapSize, 1, GL_ALPHA, GL_UNSIGNED_BYTE);
             std::memset(image->data(), 0, image->getTotalDataSize());
@@ -717,7 +718,7 @@ namespace ESMTerrain
         return info;
     }
 
-    Terrain::LayerInfo Storage::getLandTextureLayerInfo(ESM::FormId id)
+    Terrain::LayerInfo Storage::getLandTextureLayerInfo(ESM::FormId id, const Terrain::LayerInfo* fallback)
     {
         if (const ESM4::LandTexture* ltex = getEsm4LandTexture(id))
         {
@@ -732,7 +733,17 @@ namespace ESMTerrain
                 Log(Debug::Warning) << "TextureSet not found: " << ltex->mTexture.toString();
         }
         else
-            Log(Debug::Warning) << "LandTexture not found: " << id.toString();
+        {
+            bool shouldWarn = false;
+            {
+                std::lock_guard<std::mutex> lock(mMissingEsm4LandTexturesMutex);
+                shouldWarn = mMissingEsm4LandTextures.emplace(id).second;
+            }
+            if (shouldWarn)
+                Log(Debug::Warning) << "LandTexture not found: " << id.toString();
+            if (fallback != nullptr)
+                return *fallback;
+        }
         return getLayerInfo(VFS::Path::NormalizedView());
     }
 
